@@ -1,0 +1,32 @@
+{
+  "name": "google-api",
+  "version": "1.0.0",
+  "description": "using the google api for stuff",
+  "main": "no",
+  "repository": {
+    "type": "git",
+    "url": "no"
+  },
+  "keywords": [
+    "no"
+  ],
+  "author": "shortpoet",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=8"
+  },
+  "files": [
+    "**/*.js",
+    "!test/"
+  ],
+  "scripts": {
+    "test": "no"
+  },
+  "dependencies": {
+    "fs": "0.0.1-security",
+    "googleapis": "^48.0.0",
+    "open": "^7.0.3",
+    "server-destroy": "^1.0.1",
+    "url": "^0.11.0"
+  }
+}
