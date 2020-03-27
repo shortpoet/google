@@ -1,0 +1,152 @@
+{
+    "id": "",
+    "threadId": "",
+    "labelIds": [
+    ],
+    "snippet": "‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌",
+    "payload": {
+      "partId": "",
+      "mimeType": "multipart/alternative",
+      "filename": "",
+      "headers": [
+        {
+          "name": "Delivered-To",
+          "value": ""
+        },
+        {
+          "name": "Received",
+          "value": ""
+        },
+        {
+          "name": "X-Google-Smtp-Source",
+          "value": ""
+        },
+        {
+          "name": "X-Received",
+          "value": ""
+        },
+        {
+          "name": "ARC-Seal",
+          "value": ""
+        },
+        {
+          "name": "ARC-Message-Signature",
+          "value": ""
+        },
+        {
+          "name": "ARC-Authentication-Results",
+          "value": ""
+        },
+        {
+          "name": "Return-Path",
+          "value": ""
+        },
+        {
+          "name": "Received",
+          "value": ""
+        },
+        {
+          "name": "Received-SPF",
+          "value": ""
+        },
+        {
+          "name": "Authentication-Results",
+          "value": ""
+        },
+        {
+          "name": "DKIM-Signature",
+          "value": ""
+        },
+        {
+          "name": "X-MSFBL",
+          "value": ""
+        },
+        {
+          "name": "Date",
+          "value": ""
+        },
+        {
+          "name": "From",
+          "value": ""
+        },
+        {
+          "name": "To",
+          "value": ""
+        },
+        {
+          "name": "Subject",
+          "value": ""
+        },
+        {
+          "name": "MIME-Version",
+          "value": ""
+        },
+        {
+          "name": "Content-Type",
+          "value": ""
+        },
+        {
+          "name": "List-Unsubscribe",
+          "value": ""
+        },
+        {
+          "name": "Precedence",
+          "value": ""
+        },
+        {
+          "name": "Message-ID",
+          "value": ""
+        },
+        {
+          "name": "Feedback-ID",
+          "value": ""
+        }
+      ],
+      "body": {
+        "size": 0
+      },
+      "parts": [
+        {
+          "partId": "0",
+          "mimeType": "text/plain",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": ""
+            },
+            {
+              "name": "Content-Transfer-Encoding",
+              "value": ""
+            }
+          ],
+          "body": {
+            "size": 4126,
+            "data":
+          }
+        },
+        {
+          "partId": "1",
+          "mimeType": "text/html",
+          "filename": "",
+          "headers": [
+            {
+              "name": "Content-Type",
+              "value": ""
+            },
+            {
+              "name": "Content-Transfer-Encoding",
+              "value": ""
+            }
+          ],
+          "body": {
+            "size": 84523,
+            "data":
+          }
+        }
+      ]
+    },
+    "sizeEstimate": 100867,
+    "historyId": "5694623",
+    "internalDate": "1585102162000"
+  }

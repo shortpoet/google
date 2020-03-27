@@ -102,6 +102,7 @@ class RefreshClient {
         fs.readFile(TOKEN_PATH, (err, token) => {
           this.oAuth2Client.setCredentials(JSON.parse(token));
           resolve(this.oAuth2Client)
+          console.log('Authenticated with token')
         });    
       } else {
         // grab the url that will be used for authorization

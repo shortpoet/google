@@ -35,7 +35,6 @@ async function getMessageList() {
 async function getMessage(messageId) {
   const res = await gmail.users.messages.get({userId: 'me', id: messageId});
   console.log(util.inspect(res, false, null, true));
-  writeJson(res.data, '../data/message.data.json', 2)
   return res.data;
 }
 // Extract message ID, sender, attachment filename and attachment ID
@@ -97,6 +96,7 @@ const extractInfoFromMessage = (message) => {
 
 
 const runSample = async () => {
+  const account = 'shortpoet'
   const messageListRes = await getMessageList()
   const messages = messageListRes.messages;
   const nextPageToken = messageListRes.nextPageToken;
@@ -104,6 +104,7 @@ const runSample = async () => {
   const i = 0;
   const message = messages[i];
   const messageRes = await getMessage(message.id);
+  writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
   const messageThread = message.threadId;
   const messageInfo = extractInfoFromMessage(messageRes);
   console.log(util.inspect(messageInfo, false, null, true));

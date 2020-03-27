@@ -12,38 +12,45 @@
 // limitations under the License.
 
 'use strict';
-
+const util = require('util');
+const {writeJson} = require('../util/index');
 const {google} = require('googleapis');
 // const sampleClient = require('../sampleclient');
 const refreshClient = require('../_refreshClient');
-const auth = refreshClient.oAuth2Client;
+const gmail = google.gmail({
+  version: 'v1',
+  auth:  refreshClient.oAuth2Client,
+});  
 
 
-async function getMessages() {
-  const gmail = google.gmail({
-    version: 'v1',
-    auth: auth,
-  });  
+async function getMessageList() {
   const res = await gmail.users.messages.list({userId: 'me'});
   console.log(res.data);
+  return res.data;
+}
+
+async function getMessage(messageId) {
+  const res = await gmail.users.messages.get({userId: 'me', id: messageId});
+  console.log(util.inspect(res, false, null, true));
+  writeJson(res.data, 'message.data.json', 2)
   return res.data;
 }
 // Extract message ID, sender, attachment filename and attachment ID
 // from the message.
 const extractInfoFromMessage = (message) => {
-  const messageId = message.data.id;
+  const messageId = message.id;
   let from;
   let filename;
   let attachmentId;
 
-  const headers = message.data.payload.headers;
+  const headers = message.payload.headers;
   for (var i in headers) {
     if (headers[i].name === 'From') {
       from = headers[i].value;
     }
   }
 
-  const payloadParts = message.data.payload.parts;
+  const payloadParts = message.payload.parts;
   for (var j in payloadParts) {
     if (payloadParts[j].body.attachmentId) {
       filename = payloadParts[j].filename;
@@ -69,8 +76,17 @@ const extractAttachmentFromMessage = async (email, messageId, attachmentId) => {
 };
 
 const runSample = async () => {
-  const messages = await getMessages()
-  return messages
+  const messageListRes = await getMessageList()
+  const messages = messageListRes.messages;
+  const nextPageToken = messageListRes.nextPageToken;
+  const resultSizeEstimate = messageListRes.resultSizeEstimate;
+  const i = 0;
+  const message = messages[i];
+  const messageRes = await getMessage(message.id);
+  const messageThread = message.threadId;
+  const messageInfo = extractInfoFromMessage(messageRes);
+  console.log(util.inspect(messageInfo, false, null, true));
+  return messageInfo
 }
 
 if (module === require.main) {
