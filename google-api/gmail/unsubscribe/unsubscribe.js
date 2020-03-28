@@ -12,7 +12,9 @@
 // limitations under the License.
 
 'use strict';
-const { writeJson } = require('../../util/index');
+const { writeJson, appendSeparatorFile } = require('../../util/index');
+const fs = require('fs');
+const path = require('path');
 const recase = require('../../util/recase');
 const { google } = require('googleapis');
 
@@ -100,10 +102,10 @@ const extractInfoFromMessage = (message) => {
   return data
 };
 
-async function createSheet() {
+async function createSheet(title) {
   const resource = {
     properties: {
-      title: "Shortpoet Sheet"
+      title: title.title
     },
     sheets: [
       {
@@ -125,15 +127,13 @@ async function createSheet() {
       }
     ],
   }
-  // const _title = recase(JSON.parse(JSON.stringify(resource.properties.title)))
-  const _title = "shortpoetSheet"
   const response = (await sheets.spreadsheets.create({
     // fields indicates which are included in response, default is all
     // fields:'spreadsheetId',
     resource
   })
   ).data
-  writeJson(response, `../data/${_title}.create.data.json`, 2)
+  writeJson(response, `../data/${title.field}.create.data.json`, 2)
   // console.log(JSON.stringify(response, null, 2))
   return response
 }
@@ -184,12 +184,30 @@ function buildHeaderRowRequest(sheetId) {
   };
 }
 
-async function updateSheet(spreadsheetId, dataSheetId) {
-  const resource = {
-    requests: [
-      buildHeaderRowRequest(dataSheetId)
-    ]
+function buildDeleteRequest(sheetId) {
+  return {
+    deleteSheet: {
+      sheetId: sheetId,
+    }
+  };
+}
+
+async function updateSheet(spreadsheetId, command) {
+  let requests;
+  switch (command.command) {
+    case 'delete':
+      requests = [
+        buildDeleteRequest(command.dataSheetId)
+      ];
+    case 'header':
+      requests = [
+        buildHeaderRowRequest(command.dataSheetId),
+      ];
+    break;
   }
+  const resource = {
+    requests: requests
+  };
   const response = (await sheets.spreadsheets.batchUpdate({
     // fields indicates which are included in response, default is all
     // fields:'spreadSheetId',
@@ -202,7 +220,33 @@ async function updateSheet(spreadsheetId, dataSheetId) {
   return response
 }
 
+const titler = title => {
+  let d = new Date();
+  let h = d.getHours();
+  let m = d.getMinutes();
+  return {
+    field: `${title}_${h}_${m}`,
+    title: `${recase(title)}-${h}-${m}`
+  }
+}
 
+const previousIds = async () => {
+  return new Promise((resolve, reject) => {
+    try {
+      fs.readFile(__dirname + '/../data/dataSheetIds.txt', 'utf8', (err, ids) => {
+        ids = ids.split(',')
+        console.log(ids)
+        console.log(ids.length)
+        this.out = [ids[ids.length - 2], ids[ids.length - 1]]
+        console.log('pidsFunc', this.out)
+        resolve(this.out)
+      })
+    }
+    catch(e) {
+      resolve(e)
+    }
+  })
+};  
 
 const runSample = async () => {
   // const account = 'shortpoet'
@@ -219,17 +263,27 @@ const runSample = async () => {
   // const messageInfo = extractInfoFromMessage(messageRes);
   // console.log(util.inspect(messageInfo, false, null, true));
 
-  var unsuBC = new UnsubscribeClient();
-  unsuBC.getData().then((data) => {
-    console.log(data)
-  });
-
-  // createSheet().then((spreadSheet) => {
-  //   console.log(spreadSheet)
-  //   const spreadsheetId = spreadSheet.spreadsheetId
-  //   const dataSheetId = spreadSheet.sheets[0].properties.sheetId
-  //   updateSheet(spreadsheetId, dataSheetId)  
-  // })
+  // var unsuBC = new UnsubscribeClient();
+  // unsuBC.getData().then((data) => {
+  //   console.log(data)
+  // });
+  
+  // leading / allows to skip using path.join
+  createSheet(titler('shortpoetSheet')).then((spreadSheet) => {
+    // console.log(spreadSheet)
+    const spreadsheetId = spreadSheet.spreadsheetId
+    const dataSheetId = spreadSheet.sheets[0].properties.sheetId
+    appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
+      appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
+        console.log('currIds', [spreadsheetId, dataSheetId])
+        previousIds().then((pIds) => {
+          console.log('pIdsPromise', pIds)
+          updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
+          updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
+        })
+      });
+    });
+  })
   // return messageInfo
 }
 

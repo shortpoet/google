@@ -11,7 +11,18 @@ const writeJson = async function(data, fileTo, space) {
 		console.log(`## Data Written to file: ${fileTo}`)
 	});
 } 
+const appendSeparatorFile = async function(data, fileTo, separator) {
+	fileTo = fileTo || 'data.txt';
+	separator = separator || ',';
+	var stream = fs.createWriteStream(fileTo, {flags: 'a'}, (err) => {
+		if (err) throw err;
+	});
+	await stream.write(`${ separator + data.toString()}`);
+	console.log(`## Data Written to file: ${fileTo}`)
+	stream.end();
+} 
 
 module.exports = {
-	writeJson
+	writeJson,
+	appendSeparatorFile
 }

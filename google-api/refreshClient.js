@@ -74,7 +74,7 @@ class RefreshClient {
     const redirectUri = keys.redirect_uris[keys.redirect_uris.length - 1];
     console.log(redirectUri)
     const parts = new url.URL(redirectUri);
-    console.log(parts)
+    // console.log(parts)
     if (
       redirectUri.length === 0 ||
       parts.port !== '3000' ||
