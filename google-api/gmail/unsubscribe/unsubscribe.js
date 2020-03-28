@@ -19,8 +19,9 @@ const { google } = require('googleapis');
 const util = require('util');
 // const sampleClient = require('../sampleclient');
 const refreshClient = require('../../refreshClient');
-const Message = require('./message.js');
-const MessagePart = require('./messagePart.js');
+const Message = require('./message');
+const MessagePart = require('./messagePart');
+const UnsubscribeClient = require('./unsubscribeClient')
 
 const gmail = google.gmail({
   version: 'v1',
@@ -209,6 +210,7 @@ const runSample = async () => {
   // const messages = messageListRes.messages;
   // const nextPageToken = messageListRes.nextPageToken;
   // const resultSizeEstimate = messageListRes.resultSizeEstimate;
+
   // const i = 0;
   // const message = messages[i];
   // const messageRes = await getMessage(message.id);
@@ -216,12 +218,18 @@ const runSample = async () => {
   // const messageThread = message.threadId;
   // const messageInfo = extractInfoFromMessage(messageRes);
   // console.log(util.inspect(messageInfo, false, null, true));
-  createSheet().then((spreadSheet) => {
-    console.log(spreadSheet)
-    const spreadsheetId = spreadSheet.spreadsheetId
-    const dataSheetId = spreadSheet.sheets[0].properties.sheetId
-    updateSheet(spreadsheetId, dataSheetId)  
-  })
+
+  var unsuBC = new UnsubscribeClient();
+  unsuBC.getData().then((data) => {
+    console.log(data)
+  });
+
+  // createSheet().then((spreadSheet) => {
+  //   console.log(spreadSheet)
+  //   const spreadsheetId = spreadSheet.spreadsheetId
+  //   const dataSheetId = spreadSheet.sheets[0].properties.sheetId
+  //   updateSheet(spreadsheetId, dataSheetId)  
+  // })
   // return messageInfo
 }
 
