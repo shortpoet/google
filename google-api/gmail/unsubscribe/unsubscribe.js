@@ -13,6 +13,7 @@
 
 'use strict';
 const { writeJson } = require('../../util/index');
+const recase = require('../../util/recase');
 const { google } = require('googleapis');
 
 const util = require('util');
@@ -23,6 +24,10 @@ const MessagePart = require('./messagePart.js');
 
 const gmail = google.gmail({
   version: 'v1',
+  auth:  refreshClient.oAuth2Client,
+});  
+const sheets = google.sheets({
+  version: 'v4',
   auth:  refreshClient.oAuth2Client,
 });  
 
@@ -94,21 +99,130 @@ const extractInfoFromMessage = (message) => {
   return data
 };
 
+async function createSheet() {
+  const resource = {
+    properties: {
+      title: "Shortpoet Sheet"
+    },
+    sheets: [
+      {
+        properties: {
+          title: "Unsubscriber",
+          tabColor: {
+            alpha: 0,
+            blue: 0,
+            green: 0,
+            red: 0
+          },
+          index: 0,
+          gridProperties: {
+            frozenRowCount: 1,
+            rowCount: 100000,
+            columnCount: 8
+          }
+        }
+      }
+    ],
+  }
+  // const _title = recase(JSON.parse(JSON.stringify(resource.properties.title)))
+  const _title = "shortpoetSheet"
+  const response = (await sheets.spreadsheets.create({
+    // fields indicates which are included in response, default is all
+    // fields:'spreadsheetId',
+    resource
+  })
+  ).data
+  writeJson(response, `../data/${_title}.create.data.json`, 2)
+  // console.log(JSON.stringify(response, null, 2))
+  return response
+}
+
+var COLUMNS = [
+  { field: 'id', header: 'ID' },
+  { field: 'status', header: 'Status'},
+  { field: 'link', header: 'Link' },
+  { field: 'date', header: 'Date Recieved' },
+  { field: 'messageSender', header: 'Message Sender' },
+  { field: 'messageSize', header: 'Message Size' },
+  { field: 'unsubscribeInfo', header: 'Unsubscribe Link / Email' },
+  { field: 'status', header: 'Status'}
+];
+
+/**
+ * Builds a request that sets the header row.
+ * @param  {string} sheetId The ID of the sheet.
+ * @return {Object}         The reqeuest.
+ */
+function buildHeaderRowRequest(sheetId) {
+  var cells = COLUMNS.map(function(column) {
+    return {
+      userEnteredValue: {
+        stringValue: column.header
+      },
+      userEnteredFormat: {
+        textFormat: {
+          bold: true
+        }
+      }
+    }
+  });
+  return {
+    updateCells: {
+      start: {
+        sheetId: sheetId,
+        rowIndex: 0,
+        columnIndex: 0
+      },
+      rows: [
+        {
+          values: cells
+        }
+      ],
+      fields: 'userEnteredValue,userEnteredFormat.textFormat.bold'
+    }
+  };
+}
+
+async function updateSheet(spreadsheetId, dataSheetId) {
+  const resource = {
+    requests: [
+      buildHeaderRowRequest(dataSheetId)
+    ]
+  }
+  const response = (await sheets.spreadsheets.batchUpdate({
+    // fields indicates which are included in response, default is all
+    // fields:'spreadSheetId',
+    spreadsheetId,
+    resource
+  })
+  ).data
+  writeJson(response, `../data/sheet.update.data.json`, 2)
+  console.log(JSON.stringify(response, null, 2))
+  return response
+}
+
+
 
 const runSample = async () => {
-  const account = 'shortpoet'
-  const messageListRes = await getMessageList()
-  const messages = messageListRes.messages;
-  const nextPageToken = messageListRes.nextPageToken;
-  const resultSizeEstimate = messageListRes.resultSizeEstimate;
-  const i = 0;
-  const message = messages[i];
-  const messageRes = await getMessage(message.id);
-  writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
-  const messageThread = message.threadId;
-  const messageInfo = extractInfoFromMessage(messageRes);
-  console.log(util.inspect(messageInfo, false, null, true));
-  return messageInfo
+  // const account = 'shortpoet'
+  // const messageListRes = await getMessageList()
+  // const messages = messageListRes.messages;
+  // const nextPageToken = messageListRes.nextPageToken;
+  // const resultSizeEstimate = messageListRes.resultSizeEstimate;
+  // const i = 0;
+  // const message = messages[i];
+  // const messageRes = await getMessage(message.id);
+  // writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
+  // const messageThread = message.threadId;
+  // const messageInfo = extractInfoFromMessage(messageRes);
+  // console.log(util.inspect(messageInfo, false, null, true));
+  createSheet().then((spreadSheet) => {
+    console.log(spreadSheet)
+    const spreadsheetId = spreadSheet.spreadsheetId
+    const dataSheetId = spreadSheet.sheets[0].properties.sheetId
+    updateSheet(spreadsheetId, dataSheetId)  
+  })
+  // return messageInfo
 }
 
 if (module === require.main) {

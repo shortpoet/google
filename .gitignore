@@ -126,9 +126,8 @@ node_modules/
 .DS_Store
 
 # google oauth info
-oauth2.keys.json
-credentials.json
-*.keys.json
+*credentials.json
+*keys.json
 
 client_secret.json
 application_credentials.json
