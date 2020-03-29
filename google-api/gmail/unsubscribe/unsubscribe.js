@@ -60,6 +60,7 @@ const extractInfoFromMessage = async (message) => {
       let _received;
       let _receivedSPF;
       let _listUnsubscribe;
+      // let _status = 'Has Data';
     
       const headers = message.payload.headers;
       if (!headers) console.info(`no headers for ${message.id}`)
@@ -109,7 +110,7 @@ const extractInfoFromMessage = async (message) => {
       let data = new Message({
         messageId: message.id,
         threadId: message.threadId,
-        labelIds: message.labelIds,
+        labelIds: message.labelIds.join(', '),
         date: _date,
         from: _from,
         received: _received,
@@ -118,6 +119,7 @@ const extractInfoFromMessage = async (message) => {
         listUnsubscribe: _listUnsubscribe,
         historyId: message.historyId,
         internalDate: message.internalDate,
+        // status: _status,
         parts: _parts
       })
       resolve(data);
@@ -165,14 +167,14 @@ async function createSheet(title) {
 }
 
 var COLUMNS = [
-  { field: 'messageId', header: 'ID' },
-  { field: 'labelIds', header: 'Labels'},
-  { field: 'status', header: 'Status'},
-  { field: 'date', header: 'Date Recieved' },
-  { field: 'unsubscribeInfo', header: 'Unsubscribe Link / Email' },
-  { field: 'link', header: 'Link' },
-  { field: 'messageSender', header: 'Message Sender' },
-  { field: 'messageSize', header: 'Message Size' }
+  { type: 'string', field: 'messageId', header: 'ID' },
+  { type: 'string', field: 'labelIds', header: 'Labels'},
+  { type: 'string', field: 'status', header: 'Status'},
+  { type: 'string', field: 'date', header: 'Date Recieved' },
+  { type: 'string', field: 'listUnsubscribe', header: 'Unsubscribe Link / Email' },
+  { type: 'link', field: 'link', header: 'Link' },
+  { type: 'string', field: 'from', header: 'Message Sender' },
+  { type: 'integer', field: 'size', header: 'Message Size' }
 ];
 
 /**
@@ -217,10 +219,39 @@ function buildHeaderRowRequest(sheetId) {
  */
 function buildMessageRowRequest(sheetId, message, rowIndex) {
   var cells = COLUMNS.map(function(column) {
-    return {
-      userEnteredValue: {
-        stringValue: message[`${column.field}`]
-      }
+    switch (column.type) {
+      case 'integer':
+        return {
+          userEnteredValue: {
+            numberValue: message[`${column.field}`]
+          },
+          userEnteredFormat: {
+            numberFormat: {
+              type: 'NUMBER',
+            }
+          }
+        };
+        break;
+      case 'link':
+        return {
+          userEnteredValue: {
+            formulaValue: message[column.field]
+          }
+        };
+        break;
+      case 'string':
+        return {
+          userEnteredValue: {
+            stringValue: message[column.field]
+          }
+        };
+        break;
+      default:
+        return {
+          userEnteredValue: {
+            stringValue: order[column.field].toString()
+          }
+        };
     }
   });
   return {
@@ -235,7 +266,7 @@ function buildMessageRowRequest(sheetId, message, rowIndex) {
           values: cells
         }
       ],
-      // fields: 'userEnteredValue'
+      fields: '*'
     }
   };
 }
@@ -249,21 +280,21 @@ function buildDeleteRequest(sheetId) {
 }
 
 
-async function updateSheet(spreadsheetId, command) {
+async function updateSheet({spreadsheetId, command, dataSheetId, rowIndex, message}) {
   let requests;
-  switch (command.command) {
+  switch (command) {
     case 'delete':
       requests = [
-        buildDeleteRequest(command.dataSheetId)
+        buildDeleteRequest(dataSheetId)
       ];
     case 'header':
       requests = [
-        buildHeaderRowRequest(command.dataSheetId),
+        buildHeaderRowRequest(dataSheetId),
       ];
-    // case 'message':
-    //   requests = [
-    //     buildMessageRowRequest(command.dataSheetId),
-    //   ];
+    case 'message':
+      requests = [
+        buildMessageRowRequest(dataSheetId, message, rowIndex),
+      ];
     break;
   }
   const resource = {
@@ -276,7 +307,7 @@ async function updateSheet(spreadsheetId, command) {
     resource
   })
   ).data
-  writeJson(response, `../data/sheet.update.data.json`, 2)
+  // writeJson(response, `../data/sheet.update.data.json`, 2)
   console.log(JSON.stringify(response, null, 2))
   return response
 }
@@ -295,26 +326,58 @@ const parseData = async (message) => {
           let url;
           try {
             var hrefs = new RegExp(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
+            var hrefs2 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+).*>(.*?)<\/a.*\s*>/gi);
             // console.log(hrefs)
             let body = atob(p.bodyData)
             // console.log((urls = hrefs.exec(body)))
             // console.log(body)
             body.replace(/\s/g, "");
             while ( urls = hrefs.exec(body) ) {
-              if (urls[1].match(/unsubscribe|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|optout|opt\-out|remove/i)) {
+              if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
                 url = urls[1];
                 message.listUnsubscribe = url;
                 // console.log(urls)
                 // in this position it only resolves if it parses successfully
                 // resolve(message);
+              } else {
+                while ( urls = hrefs2.exec(body) ) {
+                  if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
+                    url = urls[1];
+                    message.listUnsubscribe = url;
+                    // console.log(urls)
+                    // in this position it only resolves if it parses successfully
+                    // resolve(message);
+                  }
               }
-            }    
+            } 
+          }   
           } catch (e) {
             console.error(e)
           }
         });
       // console.log(util.inspect(urls, false, null, true));
     }
+
+    if (message.listUnsubscribe){
+      if (message.listUnsubscribe.includes('mailto')) {
+        message.status = 'mailed unsubscribe';
+      } else if (message.listUnsubscribe.includes('href')) {
+        message.status = 'has unsubscribe link';
+    }
+    } else {
+      message.status = '';
+    }
+
+    if (message.parts){
+      if (message.parts[0].bodySize) {
+        message.size = message.parts.reduce((a, b) => a.bodySize + b.bodySize);
+      }
+    } else if (message.body.size) {
+      message.size = message.body.size;
+    } else {
+      message.size = 0;
+    }
+
     resolve(message);
     } catch(e) {
       console.error(e);
@@ -393,33 +456,35 @@ const runSample = async () => {
   const nextPageToken = messageListRes.nextPageToken;
   const resultSizeEstimate = messageListRes.resultSizeEstimate;
   // https://caolan.github.io/async/v3/docs.html#eachOf
-  // messages = messages.slice(0, 4);
-  // eachOf(messages, (message, i) => {
-  //   // console.log(message)
-  //   console.log(i, message.id)
-  //   // console.log(message.id)
-  //   try {
-  //     getMessage(message.id).then((messageRes => {
-  //       // console.log(i, message.id, message.listUnsubscribe)
-  //       // let messageThread = message.threadId;
-  //       extractInfoFromMessage(messageRes).then((messageInfo) => {
-  //         if(messageInfo.listUnsubscribe){
-  //           console.log(util.inspect(`'middle loop', ${messageInfo.messageId}, ${messageInfo.listUnsubscribe}`, false, null, true));
-  //         }
-  //         parseData(messageInfo).then((message) =>{
-  //           // only returns if resolved and assigned a listUnsubscribe
-  //           // the below only executes in that case
-  //           console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
-            
-  //         });
-  //       });
-  //     }));
-  //     } catch (e) {
-  //     console.error(e);
-  //   }
-  // }, (err) => {
-  //   if (err) console.error(err.message);
-  // });
+  messages = messages.slice(0, 4);
+  eachOf(messages, (message, i) => {
+    // console.log(message)
+    console.log(i, message.id)
+    // console.log(message.id)
+    try {
+      getMessage(message.id).then((messageRes => {
+        // console.log(i, message.id, message.listUnsubscribe)
+        // let messageThread = message.threadId;
+        extractInfoFromMessage(messageRes).then((messageInfo) => {
+          if(messageInfo.listUnsubscribe){
+            // console.log(util.inspect(`'middle loop', ${messageInfo.messageId}, ${messageInfo.listUnsubscribe}`, false, null, true));
+          }
+          parseData(messageInfo).then((message) =>{
+            // only returns if resolved and assigned a listUnsubscribe
+            // the below only executes in that case
+            console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
+            const spreadsheetId = '12U6Vw9LujwdL2aYMKmOGTWNReBl-NifKIq6Wy_QQ77w'
+            const dataSheetId = '1233090604'
+            updateSheet({spreadsheetId: spreadsheetId, dataSheetId: dataSheetId, command: 'header', rowIndex: (i + 1), message: message})
+          });
+        });
+      }));
+      } catch (e) {
+      console.error(e);
+    }
+  }, (err) => {
+    if (err) console.error(err.message);
+  });
 
   // const i = 0;
   // const message = messages[i];
@@ -433,23 +498,23 @@ const runSample = async () => {
   // });
   
   // leading / allows to skip using path.join
-  createSheet(titler('shortpoetSheet')).then((spreadsheet) => {
-    console.log(spreadsheet)
-    const spreadsheetId = spreadsheet.spreadsheetId
-    const dataSheetId = spreadsheet.sheets[0].properties.sheetId
-    updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})
+  // createSheet(titler('shortpoetSheet')).then((spreadsheet) => {
+  //   console.log(spreadsheet)
+  //   const spreadsheetId = spreadsheet.spreadsheetId
+  //   const dataSheetId = spreadsheet.sheets[0].properties.sheetId
+  //   updateSheet({spreadsheetId: spreadsheetId , command: 'header', dataSheetId: dataSheetId})
 
-    // appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
-    //   appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
-    //     console.log('currIds', [spreadsheetId, dataSheetId])
-    //     previousIds().then((pIds) => {
-    //       console.log('pIdsPromise', pIds)
-    //       // updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
-    //       // updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
-    //     })
-    //   });
-    // });
-  })
+  //   // appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
+  //   //   appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
+  //   //     console.log('currIds', [spreadsheetId, dataSheetId])
+  //   //     previousIds().then((pIds) => {
+  //   //       console.log('pIdsPromise', pIds)
+  //   //       // updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
+  //   //       // updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
+  //   //     })
+  //   //   });
+  //   // });
+  // })
   // return messageInfo
 }
 
