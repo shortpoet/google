@@ -26,7 +26,7 @@ const destroyer = require('server-destroy');
 const fs = require('fs');
 const path = require('path');
 
-const keyPath = path.join(__dirname, 'oauth2.keys.json');
+const keyPath = path.join(__dirname, './config/oauth2.keys.json');
 let keys = {
   redirect_uris: ['http://localhost:3000/oauth2callback'],
 };
@@ -60,7 +60,7 @@ const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.g
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = 'token.json';
+const TOKEN_PATH = './config/token.json';
 const tokenPath = path.join(__dirname, TOKEN_PATH);
 console.log(tokenPath)
 class RefreshClient {

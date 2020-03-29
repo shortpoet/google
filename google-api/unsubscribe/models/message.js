@@ -14,7 +14,6 @@ class Message {
     this.parts = parts
     this.link = `=HYPERLINK("https://mail.google.com/mail/u/0/#inbox/${this.messageId}#", "View")`;
   }
- 
 }
 
 module.exports = Message;

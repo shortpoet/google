@@ -31,7 +31,7 @@ const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = 'token.json';
+const TOKEN_PATH = './config/token.json';
 
 
 class RefreshClient {
@@ -41,7 +41,7 @@ class RefreshClient {
 		// LIKE A GENIUS I FORGOT THESE NEXT FEW LINES FOR HOURS LOL
 		// create an oAuth client to authorize the API call
 		// Load client secrets from a local file.
-		const keyPath = path.join(__dirname, 'credentials.json');
+		const keyPath = path.join(__dirname, './config/credentials.json');
 		const credentials = require(keyPath);
 		const {client_secret, client_id, redirect_uris} = credentials.installed;
 		this.oAuth2Client = new google.auth.OAuth2(

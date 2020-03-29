@@ -26,7 +26,7 @@ const destroyer = require('server-destroy');
 const fs = require('fs');
 const path = require('path');
 
-const keyPath = path.join(__dirname, 'oauth2.keys.json');
+const keyPath = path.join(__dirname, './config/oauth2.keys.json');
 let keys = {
   redirect_uris: ['http://localhost:3000/oauth2callback'],
 };

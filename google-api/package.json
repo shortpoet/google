@@ -28,7 +28,9 @@
     "fs": "0.0.1-security",
     "googleapis": "^48.0.0",
     "open": "^7.0.3",
+    "sequelize": "^5.21.5",
     "server-destroy": "^1.0.1",
+    "tedious": "^8.2.0",
     "url": "^0.11.0",
     "util": "^0.12.2"
   }

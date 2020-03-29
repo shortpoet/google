@@ -13,10 +13,10 @@
 
 'use strict';
 const util = require('util');
-const {writeJson} = require('../util/index');
+const {writeJson} = require('../../util/index');
 const {google} = require('googleapis');
 // const sampleClient = require('../sampleclient');
-const refreshClient = require('../_refreshClient');
+const refreshClient = require('../../_refreshClient');
 const gmail = google.gmail({
   version: 'v1',
   auth:  refreshClient.oAuth2Client,
