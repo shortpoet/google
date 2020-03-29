@@ -12,13 +12,17 @@
 // limitations under the License.
 
 'use strict';
-const { writeJson, appendSeparatorFile } = require('../../util/index');
 const fs = require('fs');
 const path = require('path');
-const recase = require('../../util/recase');
+const eachOf = require('async/eachOf');
 const { google } = require('googleapis');
-
 const util = require('util');
+const btoa= require('btoa')
+const atob= require('atob')
+
+const { writeJson, appendSeparatorFile } = require('../../util/index');
+
+const recase = require('../../util/recase');
 // const sampleClient = require('../sampleclient');
 const refreshClient = require('../../refreshClient');
 const Message = require('./message');
@@ -36,70 +40,92 @@ const sheets = google.sheets({
 
 async function getMessageList() {
   const res = await gmail.users.messages.list({userId: 'me'});
-  console.log(res.data);
+  // console.log(res.data);
   return res.data;
 }
 
 async function getMessage(messageId) {
   const res = await gmail.users.messages.get({userId: 'me', id: messageId});
-  console.log(util.inspect(res, false, null, true));
+  // console.log(util.inspect(res, false, null, true));
   return res.data;
 }
 // Extract message ID, sender, attachment filename and attachment ID
 // from the message.
-const extractInfoFromMessage = (message) => {
-  let _date;
-  let _from;
-  let _subject;
-  let _received;
-  let _receivedSPF;
-  let _listUnsubscribe;
+const extractInfoFromMessage = async (message) => {
+  return new Promise((resolve, reject) => {
+    try {
+      let _date;
+      let _from;
+      let _subject;
+      let _received;
+      let _receivedSPF;
+      let _listUnsubscribe;
+    
+      const headers = message.payload.headers;
+      if (!headers) console.info(`no headers for ${message.id}`)
+      headers.forEach(h => {
+        if (h.name === 'Date') { _date = h.value; }
+        if (h.name === 'From') { _from = h.value; }
+        if (h.name === 'Subject') { _subject = h.value; }
+        if (h.name === 'Received') { _received = h.value; }
+        if (h.name === 'Received-SPF') { _receivedSPF = h.value; }
+        if (h.name === 'List-Unsubscribe') { _listUnsubscribe = h.value; }
+      })
+    
+      const payloadParts = message.payload.parts;
+      let _parts = []
+      if (payloadParts) {
+        payloadParts.forEach(p => {
+          let _contentType;
+          let _contentTransferEncoding;
+          const partHeaders = p.headers;
+          partHeaders.forEach(ph => {
+            if (ph.name === 'Content-Type') { _contentType = ph.value; }
+            if (ph.name === 'Content-Transfer-Encoding') { _contentTransferEncoding = ph.value; }
+          })
+          let _part  = new MessagePart({
+            mimeType: p.mimeType,
+            bodySize: p.body.size,
+            bodyData: p.body.data,
+            contentType: _contentType,
+            contentTransferEncoding: _contentTransferEncoding
+          })
+          _parts.push(_part)
+        })
+        // console.log('no body', message.id, message.payload.body.size)
+      } else if (message.payload.body.size > 0) {
+        // console.log(message.id, message.payload.body.size)
+        // sometimes the body and data are directly in the payload
+        _parts.push(new MessagePart({
+          bodySize: message.payload.body.size,
+          bodyData: message.payload.body.data,
+          contentType: '',
+          contentTransferEncoding: ''
+        }))
+      } else {
+        console.info(`no parts or body for ${message.id}`)
+      }
 
-  const headers = message.payload.headers;
-  headers.forEach(h => {
-    if (h.name === 'Date') { _date = h.value; }
-    if (h.name === 'From') { _from = h.value; }
-    if (h.name === 'Subject') { _subject = h.value; }
-    if (h.name === 'Received') { _received = h.value; }
-    if (h.name === 'Received-SPF') { _receivedSPF = h.value; }
-    if (h.name === 'List-Unsubscribe') { _listUnsubscribe = h.value; }
-  })
-
-  const payloadParts = message.payload.parts;
-  let _parts = []
-  payloadParts.forEach(p => {
-    let _contentType;
-    let _contentTransferEncoding;
-    const partHeaders = p.headers;
-    partHeaders.forEach(ph => {
-      if (ph.name === 'Content-Type') { _contentType = ph.value; }
-      if (ph.name === 'Content-Transfer-Encoding') { _contentTransferEncoding = ph.value; }
-    })
-    let _part  = new MessagePart({
-      mimeType: p.mimeType,
-      bodySize: p.body.size,
-      bodyData: p.body.data,
-      contentType: _contentType,
-      contentTransferEncoding: _contentTransferEncoding
-    })
-    _parts.push(_part)
-  })
-
-  let data = new Message({
-    messageId: message.id,
-    threadId: message.threadId,
-    labelIds: message.labelIds,
-    date: _date,
-    from: _from,
-    received: _received,
-    receivedSPF: _receivedSPF,
-    subject: _subject,
-    listUnsubscribe: _listUnsubscribe,
-    historyId: message.historyId,
-    internalDate: message.internalDate,
-    parts: _parts
-    })
-  return data
+      let data = new Message({
+        messageId: message.id,
+        threadId: message.threadId,
+        labelIds: message.labelIds,
+        date: _date,
+        from: _from,
+        received: _received,
+        receivedSPF: _receivedSPF,
+        subject: _subject,
+        listUnsubscribe: _listUnsubscribe,
+        historyId: message.historyId,
+        internalDate: message.internalDate,
+        parts: _parts
+      })
+      resolve(data);
+    } catch(e) {
+      console.error(e);
+      reject(e);
+    }
+  });
 };
 
 async function createSheet(title) {
@@ -248,19 +274,70 @@ const previousIds = async () => {
   })
 };  
 
-const runSample = async () => {
-  // const account = 'shortpoet'
-  // const messageListRes = await getMessageList()
-  // const messages = messageListRes.messages;
-  // const nextPageToken = messageListRes.nextPageToken;
-  // const resultSizeEstimate = messageListRes.resultSizeEstimate;
+const parseData = async (message) => {
+  return new Promise((resolve, reject) => {
+    try {
+      let urls = [];
+      // console.log(util.inspect(message, false, null, true));
+      if (message.listUnsubscribe) {
+        console.log(message.listUnsubscribe)
+      } else {
+        console.log(`no unsub for ${message.messageId}`)
+        message.parts.forEach(p => {
+          let url;
+          try {
+            console.log(atob(p.bodyData))
+            url = atob(p.bodyData).match(/^list\-unsubscribe:(.|\r\n\s)+<(https?:\/\/[^>]+)>/im);
+            console.log(url)
+          } catch (e) {
+            console.error(e)
+          }
+          urls.push(url);
+        });
+      // console.log(util.inspect(urls, false, null, true));
+      resolve(urls);
+    }
+    } catch(e) {
+      console.error(e);
+      reject(e);
+    }
+  });
+}
 
-  // const i = 0;
-  // const message = messages[i];
-  // const messageRes = await getMessage(message.id);
+const runSample = async () => {
+  const account = 'shortpoet'
+  const messageListRes = await getMessageList()
+  var messages = messageListRes.messages;
+  const nextPageToken = messageListRes.nextPageToken;
+  const resultSizeEstimate = messageListRes.resultSizeEstimate;
+  // https://caolan.github.io/async/v3/docs.html#eachOf
+  messages = messages.slice(0, 4);
+  eachOf(messages, (message, i) => {
+    // console.log(message)
+    console.log(i, message.id)
+    // console.log(message.id)
+    try {
+      getMessage(message.id).then((messageRes => {
+        // console.log(i, message.id, message.listUnsubscribe)
+        // let messageThread = message.threadId;
+        extractInfoFromMessage(messageRes).then((messageInfo) => {
+          parseData(messageInfo).then((urls) =>{
+            console.log(util.inspect(message.id, urls, false, null, true));
+          });
+        });
+      }));
+      } catch (e) {
+      console.error(e);
+      return callback(e);
+    }
+
+
+  }, (err) => {
+    if (err) console.error(err.message);
+  });
+  const i = 0;
+  const message = messages[i];
   // writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
-  // const messageThread = message.threadId;
-  // const messageInfo = extractInfoFromMessage(messageRes);
   // console.log(util.inspect(messageInfo, false, null, true));
 
   // var unsuBC = new UnsubscribeClient();
@@ -269,21 +346,21 @@ const runSample = async () => {
   // });
   
   // leading / allows to skip using path.join
-  createSheet(titler('shortpoetSheet')).then((spreadSheet) => {
-    // console.log(spreadSheet)
-    const spreadsheetId = spreadSheet.spreadsheetId
-    const dataSheetId = spreadSheet.sheets[0].properties.sheetId
-    appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
-      appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
-        console.log('currIds', [spreadsheetId, dataSheetId])
-        previousIds().then((pIds) => {
-          console.log('pIdsPromise', pIds)
-          updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
-          updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
-        })
-      });
-    });
-  })
+  // createSheet(titler('shortpoetSheet')).then((spreadSheet) => {
+  //   // console.log(spreadSheet)
+  //   const spreadsheetId = spreadSheet.spreadsheetId
+  //   const dataSheetId = spreadSheet.sheets[0].properties.sheetId
+  //   appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
+  //     appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
+  //       console.log('currIds', [spreadsheetId, dataSheetId])
+  //       previousIds().then((pIds) => {
+  //         console.log('pIdsPromise', pIds)
+  //         updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
+  //         updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
+  //       })
+  //     });
+  //   });
+  // })
   // return messageInfo
 }
 

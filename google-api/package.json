@@ -23,6 +23,8 @@
     "test": "no"
   },
   "dependencies": {
+    "atob": "^2.1.2",
+    "btoa": "^1.2.1",
     "fs": "0.0.1-security",
     "googleapis": "^48.0.0",
     "open": "^7.0.3",
