@@ -165,14 +165,14 @@ async function createSheet(title) {
 }
 
 var COLUMNS = [
-  { field: 'id', header: 'ID' },
+  { field: 'messageId', header: 'ID' },
+  { field: 'labelIds', header: 'Labels'},
   { field: 'status', header: 'Status'},
-  { field: 'link', header: 'Link' },
   { field: 'date', header: 'Date Recieved' },
-  { field: 'messageSender', header: 'Message Sender' },
-  { field: 'messageSize', header: 'Message Size' },
   { field: 'unsubscribeInfo', header: 'Unsubscribe Link / Email' },
-  { field: 'status', header: 'Status'}
+  { field: 'link', header: 'Link' },
+  { field: 'messageSender', header: 'Message Sender' },
+  { field: 'messageSize', header: 'Message Size' }
 ];
 
 /**
@@ -210,6 +210,36 @@ function buildHeaderRowRequest(sheetId) {
   };
 }
 
+/**
+ * Builds a request that sets the header row.
+ * @param  {string} sheetId The ID of the sheet.
+ * @return {Object}         The reqeuest.
+ */
+function buildMessageRowRequest(sheetId, message, rowIndex) {
+  var cells = COLUMNS.map(function(column) {
+    return {
+      userEnteredValue: {
+        stringValue: message[`${column.field}`]
+      }
+    }
+  });
+  return {
+    updateCells: {
+      start: {
+        sheetId: sheetId,
+        rowIndex: rowIndex,
+        columnIndex: 0
+      },
+      rows: [
+        {
+          values: cells
+        }
+      ],
+      // fields: 'userEnteredValue'
+    }
+  };
+}
+
 function buildDeleteRequest(sheetId) {
   return {
     deleteSheet: {
@@ -217,6 +247,7 @@ function buildDeleteRequest(sheetId) {
     }
   };
 }
+
 
 async function updateSheet(spreadsheetId, command) {
   let requests;
@@ -229,6 +260,10 @@ async function updateSheet(spreadsheetId, command) {
       requests = [
         buildHeaderRowRequest(command.dataSheetId),
       ];
+    // case 'message':
+    //   requests = [
+    //     buildMessageRowRequest(command.dataSheetId),
+    //   ];
     break;
   }
   const resource = {
@@ -246,6 +281,83 @@ async function updateSheet(spreadsheetId, command) {
   return response
 }
 
+// https://www.labnol.org/code/19959-gmail-unsubscribe
+const parseData = async (message) => {
+  return new Promise((resolve, reject) => {
+    try {
+      let urls = [];
+      // console.log(util.inspect(message, false, null, true));
+      if (message.listUnsubscribe) {
+        // console.log(message.listUnsubscribe)
+      } else {
+        // console.log(`no unsub for ${message.messageId}`)
+        message.parts.forEach(p => {
+          let url;
+          try {
+            var hrefs = new RegExp(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
+            // console.log(hrefs)
+            let body = atob(p.bodyData)
+            // console.log((urls = hrefs.exec(body)))
+            // console.log(body)
+            body.replace(/\s/g, "");
+            while ( urls = hrefs.exec(body) ) {
+              if (urls[1].match(/unsubscribe|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|optout|opt\-out|remove/i)) {
+                url = urls[1];
+                message.listUnsubscribe = url;
+                // console.log(urls)
+                // in this position it only resolves if it parses successfully
+                // resolve(message);
+              }
+            }    
+          } catch (e) {
+            console.error(e)
+          }
+        });
+      // console.log(util.inspect(urls, false, null, true));
+    }
+    resolve(message);
+    } catch(e) {
+      console.error(e);
+      reject(e);
+    }
+  });
+}
+
+const buildMessage = () => {
+  // You can use UTF-8 encoding for the subject using the method below.
+  // You can also just use a plain string if you don't need anything fancy.
+  // const subject = '🤘 Hello 🤘';
+  // const subject = 'unsubscribe';
+  // const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  const messageParts = [
+    'From: Justin Beckwith <beckwith@google.com>',
+    'To: Justin Beckwith <beckwith@google.com>',
+    'Content-Type: text/html; charset=utf-8',
+    'MIME-Version: 1.0',
+    `Subject: unsubscribe`,
+    '',
+    'This is a message just to say unsubscribe me.',
+    'So... <b>UNSUBSCRIBE!</b>  🤘❤️😎',
+  ];
+  const message = messageParts.join('\n');
+
+  // The body needs to be base64url encoded.
+  const encodedMessage = Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+  return encodedMessage
+}
+
+const sendMessage = async (encodedMessage) => {
+  const res = await gmail.users.messages.send({
+    userId: 'me',
+    requestBody: encodedMessage
+  });
+  // console.log(util.inspect(res, false, null, true));
+  return res.data;
+}
 const titler = title => {
   let d = new Date();
   let h = d.getHours();
@@ -274,36 +386,6 @@ const previousIds = async () => {
   })
 };  
 
-const parseData = async (message) => {
-  return new Promise((resolve, reject) => {
-    try {
-      let urls = [];
-      // console.log(util.inspect(message, false, null, true));
-      if (message.listUnsubscribe) {
-        console.log(message.listUnsubscribe)
-      } else {
-        console.log(`no unsub for ${message.messageId}`)
-        message.parts.forEach(p => {
-          let url;
-          try {
-            console.log(atob(p.bodyData))
-            url = atob(p.bodyData).match(/^list\-unsubscribe:(.|\r\n\s)+<(https?:\/\/[^>]+)>/im);
-            console.log(url)
-          } catch (e) {
-            console.error(e)
-          }
-          urls.push(url);
-        });
-      // console.log(util.inspect(urls, false, null, true));
-      resolve(urls);
-    }
-    } catch(e) {
-      console.error(e);
-      reject(e);
-    }
-  });
-}
-
 const runSample = async () => {
   const account = 'shortpoet'
   const messageListRes = await getMessageList()
@@ -311,56 +393,63 @@ const runSample = async () => {
   const nextPageToken = messageListRes.nextPageToken;
   const resultSizeEstimate = messageListRes.resultSizeEstimate;
   // https://caolan.github.io/async/v3/docs.html#eachOf
-  messages = messages.slice(0, 4);
-  eachOf(messages, (message, i) => {
-    // console.log(message)
-    console.log(i, message.id)
-    // console.log(message.id)
-    try {
-      getMessage(message.id).then((messageRes => {
-        // console.log(i, message.id, message.listUnsubscribe)
-        // let messageThread = message.threadId;
-        extractInfoFromMessage(messageRes).then((messageInfo) => {
-          parseData(messageInfo).then((urls) =>{
-            console.log(util.inspect(message.id, urls, false, null, true));
-          });
-        });
-      }));
-      } catch (e) {
-      console.error(e);
-      return callback(e);
-    }
+  // messages = messages.slice(0, 4);
+  // eachOf(messages, (message, i) => {
+  //   // console.log(message)
+  //   console.log(i, message.id)
+  //   // console.log(message.id)
+  //   try {
+  //     getMessage(message.id).then((messageRes => {
+  //       // console.log(i, message.id, message.listUnsubscribe)
+  //       // let messageThread = message.threadId;
+  //       extractInfoFromMessage(messageRes).then((messageInfo) => {
+  //         if(messageInfo.listUnsubscribe){
+  //           console.log(util.inspect(`'middle loop', ${messageInfo.messageId}, ${messageInfo.listUnsubscribe}`, false, null, true));
+  //         }
+  //         parseData(messageInfo).then((message) =>{
+  //           // only returns if resolved and assigned a listUnsubscribe
+  //           // the below only executes in that case
+  //           console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
+            
+  //         });
+  //       });
+  //     }));
+  //     } catch (e) {
+  //     console.error(e);
+  //   }
+  // }, (err) => {
+  //   if (err) console.error(err.message);
+  // });
 
+  // const i = 0;
+  // const message = messages[i];
 
-  }, (err) => {
-    if (err) console.error(err.message);
-  });
-  const i = 0;
-  const message = messages[i];
   // writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
   // console.log(util.inspect(messageInfo, false, null, true));
 
-  // var unsuBC = new UnsubscribeClient();
+  // var unsuBC = new UnsubscribeClient(options);
   // unsuBC.getData().then((data) => {
   //   console.log(data)
   // });
   
   // leading / allows to skip using path.join
-  // createSheet(titler('shortpoetSheet')).then((spreadSheet) => {
-  //   // console.log(spreadSheet)
-  //   const spreadsheetId = spreadSheet.spreadsheetId
-  //   const dataSheetId = spreadSheet.sheets[0].properties.sheetId
-  //   appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
-  //     appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
-  //       console.log('currIds', [spreadsheetId, dataSheetId])
-  //       previousIds().then((pIds) => {
-  //         console.log('pIdsPromise', pIds)
-  //         updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
-  //         updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
-  //       })
-  //     });
-  //   });
-  // })
+  createSheet(titler('shortpoetSheet')).then((spreadsheet) => {
+    console.log(spreadsheet)
+    const spreadsheetId = spreadsheet.spreadsheetId
+    const dataSheetId = spreadsheet.sheets[0].properties.sheetId
+    updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})
+
+    // appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
+    //   appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
+    //     console.log('currIds', [spreadsheetId, dataSheetId])
+    //     previousIds().then((pIds) => {
+    //       console.log('pIdsPromise', pIds)
+    //       // updateSheet(pIds[0], {command: 'delete', dataSheetId: pIds[1]})  
+    //       // updateSheet(spreadsheetId, {command: 'header', dataSheetId: dataSheetId})  
+    //     })
+    //   });
+    // });
+  })
   // return messageInfo
 }
 
