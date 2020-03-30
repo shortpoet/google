@@ -1,24 +1,17 @@
-// class MessagePart {
-	// constructor ( {mimeType, contentType, contentTransferEncoding, bodySize, bodyData} ) {
-	// 	this.mimeType = mimeType
-	// 	this.contentType = contentType
-	// 	this.contentTransferEncoding = contentTransferEncoding
-	// 	this.bodySize = bodySize
-	// 	this.bodyData = bodyData
-	// }
-// }
-
-class MessagePart {
-	constructor (data = {}) {
-		Object.assign(this,
-		{
-			mimeType: '',
-			contentType: '',
-			contentTransferEncoding: '',
-			bodySize: '',
-			bodyData: '',
-		}, data);
-	}
+const messagePart = (sequelize, DataTypes) => {
+  const MessagePart = sequelize.define('messagePart', {
+    id: {type: DataType.STRING(30), allowNull: false, primaryKey: true},
+		mimeType: {type: DataType.STRING(255), allowNull: true},
+		contentType: {type: DataType.STRING(255), allowNull: true},
+		contentTransferEncoding: {type: DataType.STRING(255), allowNull: true},
+		bodySize: {type: DataType.STRING(255), allowNull: true},
+		bodyData: {type: DataType.STRING(255), allowNull: true},
+			}, {
+    associate (models) {
+      MessagePart.belongsTo(models.message, {as: 'parts'});
+    }
+  });
+  return MessagePart;
 }
 
-module.exports = MessagePart;
+module.exports = messagePart;

@@ -136,6 +136,8 @@ credentials.json
 _credentials.json
 token.json
 
+*.config.json
+
 # client config
 _README.md
 config

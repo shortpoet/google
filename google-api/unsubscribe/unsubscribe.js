@@ -16,7 +16,7 @@ const fs = require('fs');
 const path = require('path');
 const eachOf = require('async/eachOf');
 const util = require('util');
-const gmailClient = require('./gmailClient');
+const gmailClient = require('./business/gmailClient');
 const SqlClient = require('./models/sqlClient');
 const { writeJson, appendSeparatorFile } = require('../util/index');
 const Sequelize = require('sequelize');
@@ -58,12 +58,12 @@ const runSample = async () => {
   // const i = 0;
   // const message = messages[i];
 
-  // writeJson(messageRes, `../${account}_data/${message.id}.message.data.json`, 2)
+  // writeJson(messageRes, `./log/${account}_data/${message.id}.message.data.json`, 2)
   // console.log(util.inspect(messageInfo, false, null, true));
 
   var sqlIze = new SqlClient();
   
-  sqlIze.authenticate();
+  sqlIze.load().authenticate();
 
   // var unsuBC = new UnsubscribeClient(options);
   // unsuBC.getData().then((data) => {

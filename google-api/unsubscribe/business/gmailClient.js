@@ -19,13 +19,13 @@ const util = require('util');
 const btoa= require('btoa')
 const atob= require('atob')
 
-const { writeJson, appendSeparatorFile } = require('../util/index');
+const { writeJson, appendSeparatorFile } = require('../../util/index');
 
-const recase = require('../util/recase');
+const recase = require('../../util/recase');
 // const sampleClient = require('../sampleclient');
-const refreshClient = require('../refreshClient');
-const Message = require('./models/message');
-const MessagePart = require('./models/messagePart');
+const refreshClient = require('../../refreshClient');
+const Message = require('./message');
+const MessagePart = require('./messagePart');
 
 const gmail = google.gmail({
   version: 'v1',

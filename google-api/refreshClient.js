@@ -60,7 +60,7 @@ const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly', 'https://www.g
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = './config/token.json';
+const TOKEN_PATH = '../config/token.json';
 const tokenPath = path.join(__dirname, TOKEN_PATH);
 console.log(tokenPath)
 class RefreshClient {

@@ -17,7 +17,7 @@ const titler = title => {
 const previousIds = async () => {
   return new Promise((resolve, reject) => {
     try {
-      fs.readFile(__dirname + '/../data/dataSheetIds.txt', 'utf8', (err, ids) => {
+      fs.readFile(__dirname + './log/dataSheetIds.txt', 'utf8', (err, ids) => {
         ids = ids.split(',')
         console.log(ids)
         console.log(ids.length)
@@ -65,7 +65,7 @@ async function createSheet(title) {
     resource
   })
   ).data
-  writeJson(response, `../data/${title.field}.create.data.json`, 2)
+  writeJson(response, `./log/${title.field}.create.data.json`, 2)
   // console.log(JSON.stringify(response, null, 2))
   return response
 }
@@ -212,7 +212,7 @@ async function updateSheet({spreadsheetId, command, dataSheetId, rowIndex, messa
     resource
   })
   ).data
-  // writeJson(response, `../data/sheet.update.data.json`, 2)
+  // writeJson(response, `./log/sheet.update.data.json`, 2)
   console.log(JSON.stringify(response, null, 2))
   return response
 }
@@ -223,8 +223,8 @@ async function updateSheet({spreadsheetId, command, dataSheetId, rowIndex, messa
   //   const dataSheetId = spreadsheet.sheets[0].properties.sheetId
   //   updateSheet({spreadsheetId: spreadsheetId , command: 'header', dataSheetId: dataSheetId})
 
-  //   // appendSeparatorFile(spreadsheetId, '../data/dataSheetIds.txt').then(() => {
-  //   //   appendSeparatorFile(dataSheetId, '../data/dataSheetIds.txt').then(() => {
+  //   // appendSeparatorFile(spreadsheetId, '../log/dataSheetIds.txt').then(() => {
+  //   //   appendSeparatorFile(dataSheetId, '../log/dataSheetIds.txt').then(() => {
   //   //     console.log('currIds', [spreadsheetId, dataSheetId])
   //   //     previousIds().then((pIds) => {
   //   //       console.log('pIdsPromise', pIds)
