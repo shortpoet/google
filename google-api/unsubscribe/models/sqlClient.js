@@ -59,8 +59,8 @@ class SqlClient {
       });
 
     Object.keys(loaded).forEach((modelName) => {
-      if(loaded[modelName].associate) {
-        loaded[modelName].associate(loaded);
+      if(loaded[modelName].options.classMethods.associate) {
+        loaded[modelName].options.classMethods.associate(loaded);
       }
     });
 

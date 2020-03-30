@@ -1,16 +1,24 @@
 const messagePart = (sequelize, DataTypes) => {
-  const MessagePart = sequelize.define('messagePart', {
-    id: {type: DataType.STRING(30), allowNull: false, primaryKey: true},
-		mimeType: {type: DataType.STRING(255), allowNull: true},
-		contentType: {type: DataType.STRING(255), allowNull: true},
-		contentTransferEncoding: {type: DataType.STRING(255), allowNull: true},
-		bodySize: {type: DataType.STRING(255), allowNull: true},
-		bodyData: {type: DataType.STRING(255), allowNull: true},
-			}, {
-    associate (models) {
-      MessagePart.belongsTo(models.message, {as: 'parts'});
-    }
-  });
+	const MessagePart = sequelize.define('messagePart', 
+		{
+			id: {type: DataTypes.STRING(32), allowNull: false, primaryKey: true},
+			messageId: {type: DataTypes.STRING(32), allowNull: false},
+			mimeType: {type: DataTypes.STRING, allowNull: true},
+			contentType: {type: DataTypes.STRING, allowNull: true},
+			contentTransferEncoding: {type: DataTypes.STRING, allowNull: true},
+			bodySize: {type: DataTypes.INTEGER, allowNull: true},
+			bodyData: {type: DataTypes.TEXT, allowNull: true},
+		}, {
+			schema: 'gmail',
+			tableName: 'MessageParts',
+			classMethods: {
+				associate (models) {
+					// if this is unquoted 2 fks are created 
+					// if only this is unquoted an error is thrown
+					// MessagePart.belongsTo(models.messagePart);
+				}
+			}
+		});
   return MessagePart;
 }
 

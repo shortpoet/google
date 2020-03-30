@@ -63,7 +63,15 @@ const runSample = async () => {
 
   var sqlIze = new SqlClient();
   
-  sqlIze.load().authenticate();
+  var db = sqlIze.load().database;
+  db.sync(
+    // this will drop the table first and re-create it afterwards
+    {force: true}
+  );
+
+  // db.drop();
+
+  // db.authenticate();
 
   // var unsuBC = new UnsubscribeClient(options);
   // unsuBC.getData().then((data) => {

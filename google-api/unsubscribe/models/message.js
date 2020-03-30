@@ -1,20 +1,26 @@
 const message = (sequelize, DataTypes) => {
-  const Message = sequelize.define('message', {
-    messageId: {type: DataType.STRING(30), allowNull: false, primaryKey: true},
-    threadId: {type: DataType.STRING(30), allowNull: true},
-    labelIds: {type: DataType.STRING(255), allowNull: true},
-    date: {type: DataType.STRING(255), allowNull: true},
-    from: {type: DataType.STRING(255), allowNull: true},
-    received: {type: DataType.STRING(255), allowNull: true},
-    receivedSPF: {type: DataType.STRING(255), allowNull: true},
-    subject: {type: DataType.STRING(255), allowNull: true},
-    listUnsubscribe: {type: DataType.STRING(255), allowNull: true},
-    historyId: {type: DataType.STRING(255), allowNull: true},
-    internalDate: {type: DataType.STRING(255), allowNull: true},
-    parts: {type: DataType.STRING(255), allowNull: true}
+  const Message = sequelize.define('message', 
+  {
+    messageId: {type: DataTypes.STRING(32), allowNull: false, primaryKey: true},
+    threadId: {type: DataTypes.STRING(32), allowNull: true},
+    labelIds: {type: DataTypes.STRING, allowNull: true},
+    date: {type: DataTypes.DATE, allowNull: true},
+    from: {type: DataTypes.STRING, allowNull: true},
+    received: {type: DataTypes.STRING, allowNull: true},
+    receivedSPF: {type: DataTypes.STRING, allowNull: true},
+    subject: {type: DataTypes.STRING(512), allowNull: true},
+    listUnsubscribe: {type: DataTypes.STRING, allowNull: true},
+    historyId: {type: DataTypes.STRING(128), allowNull: true},
+    internalDate: {type: DataTypes.STRING(32), allowNull: true},
   }, {
-    associate (models) {
-      Message.hasMany(models.messagePart);
+    schema: 'gmail',
+    tableName: 'Messages',
+    classMethods: {
+      associate (models) {
+        // if this is commented and messagePart is not it throws an error
+        // both commented obvs no fk
+        Message.hasMany(models.messagePart);
+      }
     }
   });
   return Message;
