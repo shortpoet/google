@@ -40,7 +40,7 @@ const runSample = async () => {
   // db.authenticate();
 
   // https://caolan.github.io/async/v3/docs.html#eachOf
-  messages = messages.slice(0, 14);
+  // messages = messages.slice(0, 14);
   eachOf(messages, (message, i) => {
     // console.log(message)
     console.log(i, message.id);
@@ -62,37 +62,41 @@ const runSample = async () => {
                 if (message.status === 'Needs_Mail') {
                   let toEmail = message.listUnsubscribe;
                   let toName = message.from;
-                  gmailClient.sendMessage(gmailClient.buildMessage(toEmail, toName)).then((sendMessageRes) => {
-                    if (sendMessageRes.status === 200) {
-                      message.status = 'Mail_Sent';
-                      try {
-                        gmailClient.trashMessage(message.messageId).then((trashMessageRes) => {
-                          console.log(util.inspect(trashMessageRes, false, null, true));
-                          if (trashMessageRes.status === 200) {
-                            message.status = 'Mail_Sent_Original_Deleted';
-                          }
-                        })
-                      } catch(e) {
-                        message.status = 'Error_Deleting_Mail';
-                        console.error(e);
+                  if (message.from) {
+                    gmailClient.sendMessage(gmailClient.buildMessage(toEmail, toName)).then((sendMessageRes) => {
+                      if (sendMessageRes.status === 200) {
+                        message.status = 'Mail_Sent';
+                        try {
+                          gmailClient.trashMessage(message.messageId).then((trashMessageRes) => {
+                            // console.log(util.inspect(trashMessageRes, false, null, true));
+                            if (trashMessageRes.status === 200) {
+                              message.status = 'Mail_Sent_Original_Deleted';
+                            }
+                          })
+                        } catch(e) {
+                          message.status = 'Error_Deleting_Mail';
+                          console.error(e);
+                        }
                       }
-                    }
-                    })
+                    });
+                  } else {
+                    message.status = 'Needs_Mail_No_From'
+                  }
                 }  
               }
-              // try {
-              //   //                    was using associations: here instead of model: and it caused loooooong detour
-              //   db.message.create(message, {include: [{model: db.messagePart}]}).then((response) => {
-              //   // console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
-              //   console.log(util.inspect(`'inner loop', ${response}`, false, null, true));
-              //   });
-              // } catch(e) {
-              //   console.error(e);
-              // }
             } catch(e) {
               message.status = 'Error_Sending_Mail';
               console.error(e);
-            }
+            } finally {
+              try {
+                //                    was using associations: here instead of model: and it caused loooooong detour
+                db.message.create(message, {include: [{model: db.messagePart}]}).then((response) => {
+                // console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
+                // console.log(util.inspect(`'inner loop', ${response}`, false, null, true));
+                });
+              } catch(e) {
+                console.error(e);
+              }            }
           });
         });
       }));

@@ -142,29 +142,31 @@ const parseData = async (message) => {
             var hrefs2 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+).*>(.*?)<\/a.*\s*>/gi);
             var hrefs3 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
             // console.log(hrefs)
-            let body = atob(p.bodyData)
             // console.log((urls = hrefs.exec(body)))
             // console.log(body)
-            body.replace(/\s/g, "");
-            while ( urls = hrefs3.exec(body) ) {
-              if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
-                url = urls[1];
-                message.listUnsubscribe = url;
-                // console.log(urls)
-                // in this position it only resolves if it parses successfully
-                // resolve(message);
-              } else {
-                while ( urls = hrefs2.exec(body) ) {
-                  if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
-                    url = urls[1];
-                    message.listUnsubscribe = url;
-                    // console.log(urls)
-                    // in this position it only resolves if it parses successfully
-                    // resolve(message);
+            if (p.bodyData) {
+              let body = atob(p.bodyData)
+              body.replace(/\s/g, "");
+              while ( urls = hrefs3.exec(body) ) {
+                if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
+                  url = urls[1];
+                  message.listUnsubscribe = url;
+                  // console.log(urls)
+                  // in this position it only resolves if it parses successfully
+                  // resolve(message);
+                } else {
+                  while ( urls = hrefs2.exec(body) ) {
+                    if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
+                      url = urls[1];
+                      message.listUnsubscribe = url;
+                      // console.log(urls)
+                      // in this position it only resolves if it parses successfully
+                      // resolve(message);
+                    }
                   }
+                }              
               }
             }
-          }   
           } catch (e) {
             console.error(e)
           }
@@ -229,13 +231,13 @@ const buildMessage = (toEmail, toName) => {
   const fromName = 'shortpoet'
   const fromEmail = 'shortpoet@gmail.com'
   const subject = 'unsubscribe';
-  // const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
   const messageParts = [
     `From: ${fromName} <${fromEmail}>`,
     `To: ${toName} <${toEmail}>`,
     'Content-Type: text/html; charset=utf-8',
     'MIME-Version: 1.0',
-    `Subject: ${subject}`,
+    `Subject: ${utf8Subject}`,
     '',
     'This is a message just to say unsubscribe me.',
     'So... <b>UNSUBSCRIBE!</b>  🤘❤️😎',
@@ -252,20 +254,27 @@ const buildMessage = (toEmail, toName) => {
 }
 
 const sendMessage = async (encodedMessage) => {
-  const res = await gmail.users.messages.send({
-    userId: 'me',
-    requestBody: {raw: encodedMessage}
-  });
-  console.log(util.inspect(res, false, null, true));
-  return res;
+  try {
+    const res = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {raw: encodedMessage}
+    });
+    // console.log(util.inspect(res, false, null, true));
+    return res;  
+  } catch(e){
+    console.error(e);
+  }
 }
 
 async function trashMessage(messageId) {
-  const res = await gmail.users.messages.trash({userId: 'me', id: messageId});
-  // console.log(util.inspect(res, false, null, true));
-  return res;
+  try {
+    const res = await gmail.users.messages.trash({userId: 'me', id: messageId});
+    // console.log(util.inspect(res, false, null, true));
+    return res;
+  } catch(e){
+    console.error(e);
+  }
 }
-
 
 const gmailClient = {
   getMessageList,
