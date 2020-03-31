@@ -17,7 +17,7 @@ const path = require('path');
 const eachOf = require('async/eachOf');
 const util = require('util');
 const gmailClient = require('./business/gmailClient');
-const SqlClient = require('./models/sqlClient');
+// const SqlClient = require('./models/sqlClient');
 const { writeJson, appendSeparatorFile } = require('../util/index');
 const Sequelize = require('sequelize');
 const db = require('./models/index')
@@ -25,10 +25,11 @@ const db = require('./models/index')
 const runSample = async () => {
   const account = 'shortpoet'
   const messageListRes = await gmailClient.getMessageList()
-  var messages = messageListRes.messages;
-  const nextPageToken = messageListRes.nextPageToken;
-  const resultSizeEstimate = messageListRes.resultSizeEstimate;
-  var sqlIze = new SqlClient();
+  var messages = messageListRes.data.messages;
+  const nextPageToken = messageListRes.data.nextPageToken;
+
+  const resultSizeEstimate = messageListRes.data.resultSizeEstimate;
+  // var sqlIze = new SqlClient();
   
   // var db = sqlIze.load().sequelize;
   await db.sequelize.sync(
@@ -39,16 +40,17 @@ const runSample = async () => {
   // db.authenticate();
 
   // https://caolan.github.io/async/v3/docs.html#eachOf
-  // messages = messages.slice(0, 7);
+  messages = messages.slice(0, 14);
   eachOf(messages, (message, i) => {
     // console.log(message)
-    console.log(i, message.id)
+    console.log(i, message.id);
     // console.log(message.id)
     try {
-      gmailClient.getMessage(message.id).then((messageRes => {
+      gmailClient.getMessage(message.id).then((getMessageRes => {
+        let messageData = getMessageRes.data
         // console.log(i, message.id, message.listUnsubscribe)
         // let messageThread = message.threadId;
-        gmailClient.extractInfoFromMessage(messageRes).then((messageInfo) => {
+        gmailClient.extractInfoFromMessage(messageData).then((messageInfo) => {
           if(messageInfo.listUnsubscribe){
             // console.log(util.inspect(`'middle loop', ${messageInfo.messageId}, ${messageInfo.listUnsubscribe}`, false, null, true));
           }
@@ -56,19 +58,47 @@ const runSample = async () => {
             // only returns if resolved and assigned a listUnsubscribe
             // the below only executes in that case
             try {
-              //                    was using associations: here instead of model: and it caused loooooong detour
-              db.message.create(message, {include: [{model: db.messagePart}]}).then((response) => {
-                // console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
-                console.log(util.inspect(`'inner loop', ${response}`, false, null, true));
-              });
+              if (message.listUnsubscribe) {
+                if (message.status === 'Needs_Mail') {
+                  let toEmail = message.listUnsubscribe;
+                  let toName = message.from;
+                  gmailClient.sendMessage(gmailClient.buildMessage(toEmail, toName)).then((sendMessageRes) => {
+                    if (sendMessageRes.status === 200) {
+                      message.status = 'Mail_Sent';
+                      try {
+                        gmailClient.trashMessage(message.messageId).then((trashMessageRes) => {
+                          console.log(util.inspect(trashMessageRes, false, null, true));
+                          if (trashMessageRes.status === 200) {
+                            message.status = 'Mail_Sent_Original_Deleted';
+                          }
+                        })
+                      } catch(e) {
+                        message.status = 'Error_Deleting_Mail';
+                        console.error(e);
+                      }
+                    }
+                    })
+                }  
+              }
+              // try {
+              //   //                    was using associations: here instead of model: and it caused loooooong detour
+              //   db.message.create(message, {include: [{model: db.messagePart}]}).then((response) => {
+              //   // console.log(util.inspect(`'inner loop', ${message.messageId}, ${message.listUnsubscribe}`, false, null, true));
+              //   console.log(util.inspect(`'inner loop', ${response}`, false, null, true));
+              //   });
+              // } catch(e) {
+              //   console.error(e);
+              // }
             } catch(e) {
+              message.status = 'Error_Sending_Mail';
               console.error(e);
             }
           });
         });
       }));
       } catch (e) {
-      console.error(e);
+        console.log('error getting message');
+        console.error(e);
     }
   }, (err) => {
     if (err) console.error(err.message);

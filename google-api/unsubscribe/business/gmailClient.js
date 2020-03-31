@@ -33,15 +33,15 @@ const gmail = google.gmail({
 });  
 
 async function getMessageList() {
-  const res = await gmail.users.messages.list({userId: 'me'});
+  const res = await gmail.users.messages.list({userId: 'me', q: '-in:sent'});
   // console.log(res.data);
-  return res.data;
+  return res;
 }
 
 async function getMessage(messageId) {
   const res = await gmail.users.messages.get({userId: 'me', id: messageId});
   // console.log(util.inspect(res, false, null, true));
-  return res.data;
+  return res;
 }
 // Extract message ID, sender, attachment filename and attachment ID
 // from the message.
@@ -137,15 +137,16 @@ const parseData = async (message) => {
         // console.log(`no unsub for ${message.messageId}`)
         message.messageParts.forEach(p => {
           let url;
-          try {
+          try {                    
             var hrefs = new RegExp(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
             var hrefs2 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+).*>(.*?)<\/a.*\s*>/gi);
+            var hrefs3 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
             // console.log(hrefs)
             let body = atob(p.bodyData)
             // console.log((urls = hrefs.exec(body)))
             // console.log(body)
             body.replace(/\s/g, "");
-            while ( urls = hrefs.exec(body) ) {
+            while ( urls = hrefs3.exec(body) ) {
               if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
                 url = urls[1];
                 message.listUnsubscribe = url;
@@ -162,7 +163,7 @@ const parseData = async (message) => {
                     // resolve(message);
                   }
               }
-            } 
+            }
           }   
           } catch (e) {
             console.error(e)
@@ -171,14 +172,32 @@ const parseData = async (message) => {
       // console.log(util.inspect(urls, false, null, true));
     }
 
+
     if (message.listUnsubscribe){
+      // removed angle brackets ?used by golang json.marshall? to escape html in json
+      // https://github.com/containers/skopeo/issues/473
       if (message.listUnsubscribe.includes('mailto')) {
-        message.status = 'mailed unsubscribe';
+        if (message.listUnsubscribe.split(',').length > 1) {
+          message.listUnsubscribe = message.listUnsubscribe.split(',').filter(x => x.includes('mailto'))[0];
+          message.listUnsubscribe = message.listUnsubscribe.replace('mailto:', '');
+          message.listUnsubscribe = message.listUnsubscribe.replace(/\?subject.*|\?body.*/gi, '');
+        } else {
+          message.listUnsubscribe = message.listUnsubscribe.replace('mailto:', '');
+          message.listUnsubscribe = message.listUnsubscribe.replace(/\?subject.*|\?body.*/gi, '');
+        }
+        message.status = 'Needs_Mail';
       } else if (message.listUnsubscribe.includes('href')) {
-        message.status = 'has unsubscribe link';
-    }
+        message.status = 'Needs_Http';
+      }
+
+      if (message.listUnsubscribe.slice(0,1) === '<') {
+        message.listUnsubscribe = message.listUnsubscribe.slice(1);
+      }  
+      if (message.listUnsubscribe.slice(message.listUnsubscribe.length -1) === '>') {
+        message.listUnsubscribe = message.listUnsubscribe.slice(0, message.listUnsubscribe.length -1);
+      }  
     } else {
-      message.status = '';
+      message.status = 'No_Unsubscribe';
     }
 
     if (message.messageParts){
@@ -203,18 +222,20 @@ const parseData = async (message) => {
   });
 }
 
-const buildMessage = () => {
+const buildMessage = (toEmail, toName) => {
   // You can use UTF-8 encoding for the subject using the method below.
   // You can also just use a plain string if you don't need anything fancy.
   // const subject = '🤘 Hello 🤘';
-  // const subject = 'unsubscribe';
+  const fromName = 'shortpoet'
+  const fromEmail = 'shortpoet@gmail.com'
+  const subject = 'unsubscribe';
   // const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
   const messageParts = [
-    'From: Justin Beckwith <beckwith@google.com>',
-    'To: Justin Beckwith <beckwith@google.com>',
+    `From: ${fromName} <${fromEmail}>`,
+    `To: ${toName} <${toEmail}>`,
     'Content-Type: text/html; charset=utf-8',
     'MIME-Version: 1.0',
-    `Subject: unsubscribe`,
+    `Subject: ${subject}`,
     '',
     'This is a message just to say unsubscribe me.',
     'So... <b>UNSUBSCRIBE!</b>  🤘❤️😎',
@@ -233,11 +254,18 @@ const buildMessage = () => {
 const sendMessage = async (encodedMessage) => {
   const res = await gmail.users.messages.send({
     userId: 'me',
-    requestBody: encodedMessage
+    requestBody: {raw: encodedMessage}
   });
-  // console.log(util.inspect(res, false, null, true));
-  return res.data;
+  console.log(util.inspect(res, false, null, true));
+  return res;
 }
+
+async function trashMessage(messageId) {
+  const res = await gmail.users.messages.trash({userId: 'me', id: messageId});
+  // console.log(util.inspect(res, false, null, true));
+  return res;
+}
+
 
 const gmailClient = {
   getMessageList,
@@ -246,6 +274,7 @@ const gmailClient = {
   parseData,
   buildMessage,
   sendMessage,
+  trashMessage,
   client: refreshClient
 };
 module.exports = gmailClient;
