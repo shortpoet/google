@@ -44,29 +44,32 @@ class SqlClient {
 
   load () {
     const baseFolder = __dirname;
-    const indexFile = 'sqlClient.js';
-    const loaded = {};
+    // const indexFile = 'sqlClient.js';
+    const indexFiles = ['index.js','sqlClient.js'];
+    const db = {};
 
     fs
       .readdirSync(baseFolder)
       .filter((file) => {
-        return (file.indexOf('.') !== 0) && (file !== indexFile) && (file.slice(-3) === '.js');
+        // return (file.indexOf('.') !== 0) && (file !== indexFile) && (file.slice(-3) === '.js');
+        return (file.indexOf('.') !== 0) && (!indexFiles.includes(file)) && (file.slice(-3) === '.js');
       })
       .forEach((file) => {
         const model = this.sql['import'](path.join(baseFolder, file));
         const modelName = file.split('.')[0];
-        loaded[modelName] = model;
+        db[modelName] = model;
       });
 
-    Object.keys(loaded).forEach((modelName) => {
-      if(loaded[modelName].options.classMethods.associate) {
-        loaded[modelName].options.classMethods.associate(loaded);
+    Object.keys(db).forEach((modelName) => {
+      if(db[modelName].options.classMethods.associate) {
+        db[modelName].options.classMethods.associate(db);
       }
     });
 
-    loaded.database = this.sql;
+    db.sequelize = this.sql;
+    db.Sequelize = Sequelize;
 
-    return loaded;
+    return db;
 
   }
 

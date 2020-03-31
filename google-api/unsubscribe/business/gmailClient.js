@@ -68,7 +68,7 @@ const extractInfoFromMessage = async (message) => {
       })
     
       const payloadParts = message.payload.parts;
-      let _parts = []
+      let _messageParts = []
       if (payloadParts) {
         payloadParts.forEach(p => {
           let _contentType;
@@ -79,19 +79,20 @@ const extractInfoFromMessage = async (message) => {
             if (ph.name === 'Content-Transfer-Encoding') { _contentTransferEncoding = ph.value; }
           })
           let _part  = new MessagePart({
+            messageId: message.id,
             mimeType: p.mimeType,
             bodySize: p.body.size,
             bodyData: p.body.data,
             contentType: _contentType,
             contentTransferEncoding: _contentTransferEncoding
           })
-          _parts.push(_part)
+          _messageParts.push(_part)
         })
         // console.log('no body', message.id, message.payload.body.size)
       } else if (message.payload.body.size > 0) {
         // console.log(message.id, message.payload.body.size)
         // sometimes the body and data are directly in the payload
-        _parts.push(new MessagePart({
+        _messageParts.push(new MessagePart({
           bodySize: message.payload.body.size,
           bodyData: message.payload.body.data,
           contentType: '',
@@ -114,7 +115,7 @@ const extractInfoFromMessage = async (message) => {
         historyId: message.historyId,
         internalDate: message.internalDate,
         // status: _status,
-        parts: _parts
+        messageParts: _messageParts
       })
       resolve(data);
     } catch(e) {
@@ -134,7 +135,7 @@ const parseData = async (message) => {
         // console.log(message.listUnsubscribe)
       } else {
         // console.log(`no unsub for ${message.messageId}`)
-        message.parts.forEach(p => {
+        message.messageParts.forEach(p => {
           let url;
           try {
             var hrefs = new RegExp(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
@@ -180,13 +181,13 @@ const parseData = async (message) => {
       message.status = '';
     }
 
-    if (message.parts){
+    if (message.messageParts){
       // if there is more than one part with bodySize property
-      if (message.parts.length > 1) {
-        message.size = message.parts.reduce((a, b) => a.bodySize + b.bodySize);
+      if (message.messageParts.length > 1) {
+        message.size = message.messageParts.reduce((a, b) => a.bodySize + b.bodySize);
       }
       else {
-        message.size = message.parts[0].bodySize
+        message.size = message.messageParts[0].bodySize
       }
     } else if (message.body.size) {
       message.size = message.body.size;

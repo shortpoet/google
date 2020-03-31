@@ -1,5 +1,5 @@
 class Message {
-  constructor ( {messageId, threadId, labelIds, date, from, received, receivedSPF, subject, listUnsubscribe, historyId, internalDate, parts} ) {
+  constructor ( {messageId, threadId, labelIds, date, from, received, receivedSPF, subject, listUnsubscribe, historyId, internalDate, messageParts} ) {
     this.messageId = messageId
     this.threadId = threadId
     this.labelIds = labelIds
@@ -11,7 +11,7 @@ class Message {
     this.listUnsubscribe = listUnsubscribe
     this.historyId = historyId
     this.internalDate = internalDate
-    this.parts = parts
+    this.messageParts = messageParts
     this.link = `=HYPERLINK("https://mail.google.com/mail/u/0/#inbox/${this.messageId}#", "View")`;
   }
 }

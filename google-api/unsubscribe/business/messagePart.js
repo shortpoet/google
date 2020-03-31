@@ -12,6 +12,7 @@ class MessagePart {
 	constructor (data = {}) {
 		Object.assign(this,
 		{
+			messageId: '',
 			mimeType: '',
 			contentType: '',
 			contentTransferEncoding: '',

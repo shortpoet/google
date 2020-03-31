@@ -1,7 +1,9 @@
-const messagePart = (sequelize, DataTypes) => {
-	const MessagePart = sequelize.define('messagePart', 
+module.exports = (sequelize, DataTypes) => {
+	return MessagePart = sequelize.define('messagePart', 
 		{
-			id: {type: DataTypes.STRING(32), allowNull: false, primaryKey: true},
+			id: {type: DataTypes.INTEGER, allowNull: false, primaryKey: true, autoIncrement: true},
+			// foreign key cannot be null in insert "known issue"
+			// https://github.com/sequelize/sequelize/issues/4708
 			messageId: {type: DataTypes.STRING(32), allowNull: false},
 			mimeType: {type: DataTypes.STRING, allowNull: true},
 			contentType: {type: DataTypes.STRING, allowNull: true},
@@ -19,7 +21,7 @@ const messagePart = (sequelize, DataTypes) => {
 				}
 			}
 		});
-  return MessagePart;
 }
 
-module.exports = messagePart;
+
+
