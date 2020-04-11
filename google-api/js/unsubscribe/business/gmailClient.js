@@ -33,15 +33,23 @@ const gmail = google.gmail({
 });  
 
 async function getMessageList() {
-  const res = await gmail.users.messages.list({userId: 'me', q: '-in:sent'});
-  // console.log(res.data);
-  return res;
+  try {
+    const res = await gmail.users.messages.list({userId: 'me', q: '-in:sent'});
+    // console.log(res.data);
+    return res;
+  } catch(e){
+    console.error(e);
+  }
 }
 
 async function getMessage(messageId) {
-  const res = await gmail.users.messages.get({userId: 'me', id: messageId});
-  // console.log(util.inspect(res, false, null, true));
-  return res;
+  try {
+    const res = await gmail.users.messages.get({userId: 'me', id: messageId});
+    // console.log(util.inspect(res, false, null, true));
+    return res;
+  } catch(e){
+    console.error(e);
+  }
 }
 // Extract message ID, sender, attachment filename and attachment ID
 // from the message.
