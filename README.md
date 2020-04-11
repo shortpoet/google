@@ -29,9 +29,15 @@ added to startup:
 - imports
 
 ```c#
+
 services.AddAuthentication(AzureADB2CDefaults.AuthenticationScheme)
     .AddAzureADB2C(options => Configuration.Bind("AzureAdB2C", options));
 services.AddRazorPages();
+
+...
+
+endpoints.MapRazorPages();
+
 ```
 
 added to appsetting:
@@ -42,3 +48,5 @@ added to appsetting:
 dotnet add package Microsoft.AspNetCore.Authentication.AzureADB2C.UI
 dotnet add package VueCliMiddleware
 ```
+
+- renamed all the stuff for vue
