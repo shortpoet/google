@@ -12,7 +12,7 @@ import HelloWorld from '@/components/HelloWorld.vue'
 import GoogleIn from '@/components/Auth/GoogleIn.vue'
 
 export default {
-  name: 'Home',
+  name: 'Dashboard',
   components: {
     HelloWorld,
     GoogleIn
@@ -21,6 +21,13 @@ export default {
     onUserLoggedIn (user) {
       console.log(user)
     }
-  }
+  },
+  beforeRouteEnter (to, from, next) {
+    console.log('before Dashboard enter')
+    next(vm => {
+      next()
+    })
+},
+
 }
 </script>

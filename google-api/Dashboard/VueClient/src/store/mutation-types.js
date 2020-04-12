@@ -6,6 +6,8 @@ export const ERASE_COOKIE = 'ERASE_COOKIE'
 // TABLEAUX @/store/modules/StoreTableaus.js
 export const SET_APIs_LOADED = 'SET_APIs_LOADED'
 export const SET_APIs = 'SET_APIs'
+export const SET_GOOGLE_USER = 'SET_GOOGLE_USER'
+export const SET_GOOGLE_AUTH = 'SET_GOOGLE_AUTH'
 export const SET_GAPI_CLIENT_LOADED = 'SET_GAPI_CLIENT_LOADED'
 export const SET_GAPI_CLIENT = 'SET_GAPI_CLIENT'
 

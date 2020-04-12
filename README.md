@@ -2,6 +2,8 @@
 
 https://apiharmony-open.mybluemix.net/public/apis/google_sheets#post_v4_spreadsheets
 
+https://github.com/guruahn/vue-google-oauth2
+
 ## Dashboard
 
 dotnet new webapp --auth IndividualB2C

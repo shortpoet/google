@@ -76,7 +76,6 @@ export default {
     loadUser ({ commit, state, getters, rootGetters }, user) {
       console.log('#### loading USER data from action ####')
       console.log(user)
-      var url = endpoints.auth.BOEING_USER_API + user.bemsId
       console.log(url)
       axios
         .get(url)
@@ -84,7 +83,6 @@ export default {
           console.log(response)
           var profile = response.data.resultholder.profiles.profileholder.user
           user.name = profile.firstName + ' ' + profile.lastName
-          user.insitepic = `https://insite.web.boeing.com/culture/i/me/${user.bemsId}`
           commit(SET_USER, user)
         })
         .catch(function (error) {

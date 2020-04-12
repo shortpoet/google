@@ -1,14 +1,21 @@
 <template>
   <div class="google-container">
     <div class="button-drawer">
-      <button ref="signinBtn" class="btn btn-google">
+      <button ref="signinBtn" class="btn btn-google" @click="handleSignIn">
         Sign In
       </button>  
-      <button ref="queryBtn" class="btn btn-google" @click="handleClientLoad">
+      <button ref="signoutBtn" class="btn btn-google" @click="handleSignOut">
+        Sign Out
+      </button>  
+      <button ref="queryBtn" class="btn btn-google" @click="queryAPIs">
         Query
       </button>
+      <!-- <button ref="queryBtn" class="btn btn-google" @click="_handleClientLoad">
+        Query Orig
+      </button> -->
     </div>
-    <div class="api-table">
+    <div class="api-table-container d-flex">
+      <TableComp v-if="getAPIsLoaded" :items="getAPIs" :filter-fields="filterFields" />
       <TableComp v-if="items" :items="items" :filter-fields="filterFields" />
     </div>
   </div>
@@ -16,7 +23,8 @@
 
 <script>
 import TableComp from '@/components/Utils/TableComp'
-import { mapGetters, mapActions } from 'vuex'
+import { mapGetters, mapActions, mapState } from 'vuex'
+import store from '@/store'
 
 const keyFile = require('H:/source/repos/google/google-api/js/config/oauth2.keys.json');
 const client_id = keyFile.web.client_id;
@@ -28,50 +36,25 @@ export default {
   },
   data () {
     return {
+      filterFields: ['icons', 'kind'],
+      ...mapState('google', ['gapi']),
       items: null,
-      filterFields: ['icons', 'kind']
+      payload: {
+        dDocs: 'apis',
+        action: 'queryAPIs'
+      }
     }
   },
   computed: {
-    ...mapGetters('google', ['getAPIsLoaded', 'getAPIs']),
+    ...mapGetters('google', ['getAPIsLoaded', 'getAPIs'])
   },
   methods: {
-    ...mapActions('google', ['initClient']),
-    handleClientLoad() {
-      window.gapi.load('client', this.clientInit);
-    },
-    async clientInit () {
-      await window.gapi.client.init({
-        discoveryDocs: ['https://discovery.googleapis.com/$discovery/rest']
-      })
-      this.getResults()
-    },
-    async getResults () {
-      const apiRequest = await window.gapi.client.discovery.apis.list();
-      const result = JSON.parse(apiRequest.body);
-      console.log(result);
-      this.items = result.items;
-    },
-    _initClient () {
-      this.initClient({gapi: window.gapi, dDocs: 'apis'})
-    },
-    initGoogleAuth () {
-      window.gapi.load('auth2', () => {
-        const auth2 = this.gapi.auth2.init({
-          client_id: client_id,
-          cookiepolicy: 'single_host_origin'
-        })
-        auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
-          this.$emit('done', googleUser)
-        }, error => console.log(error))
-      })
-    }
+    ...mapActions('google', ['initClient', 'handleSignIn', 'handleSignOut', 'queryAPIs']),
   },
   mounted () {
-    this.initGoogleAuth();
-    if (this.getAPIsLoaded) {
-      console.log(this.getAPIs)
-    }
+    this.initClient({}).then(() => {
+      console.log('sign in button inititated')
+    })
   }  
 }
 </script>
@@ -99,8 +82,10 @@ export default {
   cursor: pointer;
 }
 
-.api-table {
+.api-table-container {
   margin: 1rem 1rem 1rem 1rem;
+  // so that responsive container doesn't shift around too much
+  min-height: 25rem;
   th {
     font-size: .70rem;
   }
