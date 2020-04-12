@@ -13,7 +13,9 @@ module.exports = {
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
-    'no-unused-vars': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
+    'no-unused-vars': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+    // this is in the syntax highlight regex
+    'no-useless-escape': process.env.NODE_ENV === 'production' ? 'warn' : 'off'
   },
   overrides: [
     {

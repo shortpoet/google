@@ -10,6 +10,12 @@
       <button ref="queryBtn" class="btn btn-google" @click="queryAPIs">
         Query
       </button>
+      <button ref="queryBtn" class="btn btn-google" @click="showCalendar = !showCalendar">
+        Show Calendar
+      </button>
+      <button ref="queryBtn" class="btn btn-google" @click="showGmail = !showGmail">
+        Show Gmail
+      </button>
       <!-- <button ref="queryBtn" class="btn btn-google" @click="_handleClientLoad">
         Query Orig
       </button> -->
@@ -17,12 +23,16 @@
     <div class="api-table-container d-flex">
       <TableComp v-if="getAPIsLoaded" :items="getAPIs" :filter-fields="filterFields" />
       <TableComp v-if="items" :items="items" :filter-fields="filterFields" />
+      <Calendar v-if="showCalendar" />
+      <Gmail v-if="showGmail" />
     </div>
   </div>
 </template>
 
 <script>
 import TableComp from '@/components/Utils/TableComp'
+import Calendar from '@/components/Google/Calendar'
+import Gmail from '@/components/Google/Gmail'
 import { mapGetters, mapActions, mapState } from 'vuex'
 import store from '@/store'
 
@@ -32,29 +42,33 @@ const client_id = keyFile.web.client_id;
 export default {
   name: 'GoogleIn',
   components: {
-    TableComp
+    TableComp,
+    Calendar,
+    Gmail
   },
   data () {
     return {
       filterFields: ['icons', 'kind'],
-      ...mapState('google', ['gapi']),
       items: null,
       payload: {
         dDocs: 'apis',
         action: 'queryAPIs'
-      }
+      },
+      showCalendar: false,
+      showGmail: false
     }
   },
   computed: {
+    ...mapState('google', ['gapiClient']),
     ...mapGetters('google', ['getAPIsLoaded', 'getAPIs'])
   },
   methods: {
     ...mapActions('google', ['initClient', 'handleSignIn', 'handleSignOut', 'queryAPIs']),
   },
   mounted () {
-    this.initClient({}).then(() => {
-      console.log('sign in button inititated')
-    })
+    // this.initClient({}).then(() => {
+    //   console.log('sign in button inititated')
+    // })
   }  
 }
 </script>
