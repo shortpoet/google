@@ -1,6 +1,6 @@
 <template>
   <div class="item-container" v-if="items">
-    <pre v-html="itmes"></pre>
+    <pre v-html="items"></pre>
   </div>
 </template>
 
@@ -10,7 +10,8 @@ export default {
   name: 'Calendar',
   data () {
     return {
-      items: null
+      items: null,
+      sample: require('./sample_calendar.js').default
     }
   },
   props: {
@@ -29,16 +30,16 @@ export default {
       console.log(gapiClient)
       console.log(vm.getGapiClient)
 
-      // gapiClient.client.calendar.events.list({
-      //   'calendarId': 'primary',
-      //   'timeMin': (new Date()).toISOString(),
-      //   'showDeleted': false,
-      //   'singleEvents': true,
-      //   'maxResults': 10,
-      //   'orderBy': 'startTime'
-      // })
-      gapiClient.client.calendar.calendarList.list({
+      gapiClient.client.calendar.events.list({
+        'calendarId': 'primary',
+        'timeMin': (new Date()).toISOString(),
+        'showDeleted': false,
+        'singleEvents': true,
+        'maxResults': 10,
+        'orderBy': 'startTime'
       })
+      // gapiClient.client.calendar.calendarList.list({
+      // })
       .then(response => {
         console.log(response)
         vm.items = this.syntaxHighlight(response.result.items);
@@ -78,10 +79,56 @@ export default {
     this.initClient({scope: 'calendar', discoveryDocs: 'calendar'}).then((gapiClient) => {
       this.getData(gapiClient);
     })
+    // console.log(this.sample)
+    // this.items = this.syntaxHighlight(this.sample)
+    // console.log(this.items)
   }
 }
 </script>
 
 <style>
+body {
+  font-family: "Open Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 300;
+  line-height: 1em;
+}
+
+.authentification {
+  margin: 20px;
+  text-align: center;
+}
+
+hr {
+  border: 1px solid black;
+  margin: 30px;
+}
+
+pre {
+  outline: 1px solid #ccc;
+  padding: 5px;
+  margin: 5px;
+  overflow-x: auto;
+}
+
+.string {
+  color: green;
+}
+
+.number {
+  color: purple;
+}
+
+.boolean {
+  color: blue;
+}
+
+.null {
+  color: magenta;
+}
+
+.key {
+  color: black;
+}
 
 </style>

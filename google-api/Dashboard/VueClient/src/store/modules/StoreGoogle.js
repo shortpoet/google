@@ -128,7 +128,7 @@ export const actions = {
       })
   },
   async queryAPIs ({ commit, dispatch }) {
-    dispatch('initClient', {}).then( async () => {
+    dispatch('initClient', {}).then( async() => {
       try {
         // 3. Make the API request.
         const apiRequest = await window.gapi.client.discovery.apis.list();

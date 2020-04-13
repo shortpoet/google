@@ -31,7 +31,7 @@ const SCOPES = ['https://www.googleapis.com/auth/gmail.readonly'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = './config/token.json';
+const TOKEN_PATH = 'H:/source/repos/google/google-api/js/config/token.json';
 
 
 class RefreshClient {
@@ -58,10 +58,10 @@ class RefreshClient {
 		return new Promise((resolve, reject) => {
 			try {
 				if (fs.existsSync(TOKEN_PATH)) {
-					console.log(TOKEN_PATH)
+					// console.log(TOKEN_PATH)
 					fs.readFile(TOKEN_PATH, (err, token) => {
 						this.oAuth2Client.setCredentials(JSON.parse(token));
-						console.log(JSON.parse(token))
+						// console.log(JSON.parse(token))
 						resolve(this.oAuth2Client)
 					});    
 				} else {
