@@ -3,6 +3,7 @@
     <img alt="Vue logo" src="../assets/logo.png">
     <HelloWorld msg="Welcome to Your Vue.js App"/>
     <GoogleIn @done="onUserLoggedIn"/>
+    <LinkedinIn />
   </div>
 </template>
 
@@ -10,13 +11,15 @@
 // @ is an alias to /src
 import HelloWorld from '@/components/HelloWorld.vue'
 import GoogleIn from '@/components/Auth/GoogleIn.vue'
+import LinkedinIn from '@/components/Auth/LinkedinIn.vue'
 import store from '@/store'
 
 export default {
   name: 'Dashboard',
   components: {
     HelloWorld,
-    GoogleIn
+    GoogleIn,
+    LinkedinIn
   },
   methods: {
     onUserLoggedIn (user) {

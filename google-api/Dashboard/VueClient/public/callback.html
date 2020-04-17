@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Waiting...</title>
+</head>
+<body>
+    <!--
+
+    This works
+    var mgr = new Oidc.UserManager({response_mode: 'query'});
+
+    This breaks
+    var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore()});
+
+    This doesn't break but simply redirects to home page without logging in
+    var mgr = new Oidc.UserManager({response_mode: 'query', userStore: new Oidc.WebStorageStateStore()}); 
+    var mgr = new Oidc.UserManager({ response_mode: 'query', userStore: new Oidc.WebSto rageStateStore({ store: window.localStorage })});
+    var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
+    -->
+
+  <script src="js/oidc-client.min.js"></script>
+  <script>
+    var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
+    console.log(mgr)
+    mgr.signinRedirectCallback().then(function (user) {
+      window.location = '/'
+    }).catch(function (err) {
+      console.log(err)
+    });
+  </script>
+</body>

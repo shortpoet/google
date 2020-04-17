@@ -16,7 +16,11 @@ const paths = [
   {
     path: '/about',
     view: 'About'
-  }
+  },
+  {
+    path: '/callback',
+    view: 'Auth0Callback'
+  },
 ]
 
 export default paths
