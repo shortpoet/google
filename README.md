@@ -52,3 +52,6 @@ dotnet add package VueCliMiddleware
 ```
 
 - renamed all the stuff for vue
+
+- GAPI
+  -     <script src="https://apis.google.com/js/client:api.js"></script>

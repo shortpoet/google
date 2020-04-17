@@ -1,3 +1,5 @@
+import Vue from 'vue';
+
 // import axios from 'axios'
 import {
   SET_APIs,
@@ -85,13 +87,14 @@ export const actions = {
       console.log('initializing google client')
       // can load the auth2 and client apis from the cdn at once in colon-separated list
       setTimeout(() => {
-        window.gapi.load('auth2:client', () => {
+        console.log(this)
+        this._vm.gapi.load('auth2:client', () => {
           console.log(this._options)
           console.log(this._options.discoveryDocs)
-          const auth2 = window.gapi.client.init(this._options).then(() => {
+          const auth2 = this._vm.gapi.client.init(this._options).then(() => {
             console.log('client loaded')
             // this.$emit('done', googleUser)
-            commit(SET_GAPI_CLIENT, window.gapi)
+            commit(SET_GAPI_CLIENT, this._vm.gapi)
             console.log(state.gapiClient)
             commit(SET_GAPI_CLIENT_LOADED, true);
             commit(SET_GOOGLE_AUTH, true)
@@ -143,6 +146,17 @@ export const actions = {
         commit(SET_APIs_LOADED, true);
       }          
     })
+  },
+  list () {
+    this._vm.$getGapiClient()
+    .then(gapi => {
+      console.log(gapi)
+      // gapi.sheets.spreadsheet.list()
+      gapi.client.calendar.calendarList.list({
+      }).then((response) => {
+        console.log(response)
+      })
+  })
   }
 }
 

@@ -21,22 +21,25 @@
 </template>
 
 <script>
+import apiConfig from '@/main.js'
 import TableComp from '@/components/Utils/TableComp'
 import { mapGetters, mapActions } from 'vuex'
 import store from '@/store'
+import GapiClient from '@/utils/GapiClient'
 
 const keyFile = require('H:/source/repos/google/google-api/js/config/oauth2.keys.json');
 const client_id = keyFile.web.client_id;
 
 export default {
-  name: 'GoogleIn',
+  name: 'GoogleYn',
   components: {
     TableComp
   },
   data () {
     return {
       items: null,
-      filterFields: ['icons', 'kind']
+      filterFields: ['icons', 'kind'],
+      gapi: null
     }
   },
   computed: {
@@ -62,35 +65,58 @@ export default {
       this.initClient(payload)
     },
     _handleClientLoad() {
-      window.gapi.load('client', this.clientInit);
+      this.gapi.load('client', this.clientInit);
     },
     async clientInit () {
-      await window.gapi.client.init({
-        discoveryDocs: ['https://discovery.googleapis.com/$discovery/rest']
-      })
+      // await window.gapi.client.init({
+      //   discoveryDocs: ['https://discovery.googleapis.com/$discovery/rest']
+      // })
+      console.log(apiConfig)
+      // removed the awaitnd this now works (again) pfffff
+      await this.gapi.client.init(apiConfig)
       this.getResults()
     },
     async getResults () {
+      console.log('getting results')
       const apiRequest = await window.gapi.client.discovery.apis.list();
-      const result = JSON.parse(apiRequest.body);
-      console.log(result);
-      this.items = result.items;
+      // const apiRequest = await window.gapi.client.gmail.users.labels.list({
+      //   'userId': 'me'
+      // })
+      // const apiRequest = await window.gapi.client.gmail.users.messages.list({
+      //   'userId': 'me'
+      // })
+      // console.log(window.gapi)
+      // const apiRequest = await window.gapi.client.calendar.events.list({
+      //   'calendarId': 'primary',
+      //   'timeMin': (new Date()).toISOString(),
+      //   'showDeleted': false,
+      //   'singleEvents': true,
+      //   'maxResults': 10,
+      //   'orderBy': 'startTime'
+      // })
+      // const apiRequest = await window.gapi.client.sheets.spreadsheets.values.get({
+      //     spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      //     range: 'Class Data!A2:E',
+      //   })
+      // let query = "properties has {key='uds' and value='true'} and trashed=false" // and properties has {key='finished' and value='true'}
+      // console.log(window.gapi)
+      // const apiRequest = await window.gapi.client.drive.files.list({
+      //   // q: query,
+      //   pageSize: 20,
+      //   // fields: 'nextPageToken, files(id, name, properties, mimeType, createdTime)'
+      // })
+      // const apiRequest = await window.gapi.client.request({
+      //   'path': '/drive/v3/files',
+      //   'method': 'GET'
+      //   });
+
+      // const result = JSON.parse(apiRequest.body);
+      console.log(apiRequest);
+      // this.items = result.items;
     },
     ...mapActions('google', ['initClient']),
     handleClientLoad() {
       window.gapi.load('client', this.clientInit);
-    },
-    async clientInit () {
-      await window.gapi.client.init({
-        discoveryDocs: ['https://discovery.googleapis.com/$discovery/rest']
-      })
-      this.getResults()
-    },
-    async getResults () {
-      const apiRequest = await window.gapi.client.discovery.apis.list();
-      const result = JSON.parse(apiRequest.body);
-      console.log(result);
-      this.items = result.items;
     },
     _initClient () {
       this.initClient({gapi: window.gapi, dDocs: 'apis'})
@@ -109,10 +135,16 @@ export default {
     }
   },
   mounted () {
-    this.$store.dispatch('google/loadGoogleClient', this.$refs.signinBtn).then(() => {
-      console.log('sign in button inititated')
-    })
+    // this.$store.dispatch('google/loadGoogleClient', this.$refs.signinBtn).then(() => {
+    //   console.log('sign in button inititated')
+    // })
     // this.initGoogleAuth();
+    const gapiClient = new GapiClient({})
+    console.log(gapiClient)
+    gapiClient.initClient().then((gapi) => {
+      this.gapi = gapi
+      console.log(this.gapi)
+    })
     if (this.getAPIsLoaded) {
       console.log(this.getAPIs)
     }
