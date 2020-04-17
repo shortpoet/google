@@ -1,17 +1,18 @@
 <template>
-  <div class="google-container">
+  <div v-if="gapiClient" class="google-container">
     <div class="button-drawer">
       <button ref="signinBtn" class="btn btn-google">
         Sign In
       </button>  
       <button ref="signoutBtn" class="btn btn-google" @click="handleSignOut">
         Sign Out
-      </button>  
-      <button ref="queryBtn" class="btn btn-google" @click="handleClientLoad(payload)">
-        Query
       </button>
-      <button ref="queryBtn" class="btn btn-google" @click="_handleClientLoad">
-        Query Orig
+      <BaseSelect
+        :options="queryOptions"
+        v-model="selectedQuery"
+      />
+      <button ref="queryBtn" class="btn btn-google" @click="queryAPIs">
+        Query
       </button>
     </div>
     <div class="api-table-container">
@@ -26,6 +27,7 @@ import TableComp from '@/components/Utils/TableComp'
 import { mapGetters, mapActions } from 'vuex'
 import store from '@/store'
 import GapiClient from '@/utils/GapiClient'
+import BaseSelect from '@/components/Utils/BaseSelect'
 
 const keyFile = require('H:/source/repos/google/google-api/js/config/oauth2.keys.json');
 const client_id = keyFile.web.client_id;
@@ -33,13 +35,22 @@ const client_id = keyFile.web.client_id;
 export default {
   name: 'GoogleYn',
   components: {
-    TableComp
+    TableComp,
+    BaseSelect
   },
   data () {
     return {
       items: null,
       filterFields: ['icons', 'kind'],
-      gapi: null
+      gapiClient: null,
+      queryOptions: [
+        {name: 'Select Query Type', value: '', disabled: true},
+        {name: 'Get APIs', value: 'getApis'},
+        {name: 'Gmail Labels', value: 'gmailLabels'},
+        {name: 'Gmail Messages', value: 'gmailMessages'},
+        {name: 'Other Methods', value: 'otherMethods'},
+      ],
+      selectedQuery: null
     }
   },
   computed: {
@@ -57,36 +68,56 @@ export default {
 },
   methods: {
     ...mapActions('google', ['initClient', 'handleSignOut', 'handleClientLoad']),
+    initGoogleAuth () {
+      // can load the auth2 and client apis from the cdn at once in colon-separated list
+      window.gapi.load('auth2:client', () => {
+        const auth2 = this.gapi.auth2.init({
+          client_id: client_id,
+          cookiepolicy: 'single_host_origin'
+        })
+        auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
+          this.$emit('done', googleUser)
+        }, error => console.log(error))
+      })
+    },
     queryAPIs () {
-      const payload = {
-        dDocs: 'apis',
-        action: 'queryAPIs'
-      }
-      this.initClient(payload)
+      let func = this[`${this.selectedQuery}`]
+      func()
     },
-    _handleClientLoad() {
-      this.gapi.load('client', this.clientInit);
+    updateQuery (event) {
+      this.selectedQuery = event.target.value
     },
-    async clientInit () {
-      // await window.gapi.client.init({
-      //   discoveryDocs: ['https://discovery.googleapis.com/$discovery/rest']
-      // })
-      console.log(apiConfig)
-      // removed the awaitnd this now works (again) pfffff
-      await this.gapi.client.init(apiConfig)
-      this.getResults()
+    async getApis () {
+      const payload = {scope: 'basic', discoveryDocs: 'apis'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting api results')
+      const apiRequest = await this.gapiClient.gapi.client.discovery.apis.list()
+      this.items = apiRequest.result.items;
     },
-    async getResults () {
-      console.log('getting results')
-      const apiRequest = await window.gapi.client.discovery.apis.list();
-      // const apiRequest = await window.gapi.client.gmail.users.labels.list({
-      //   'userId': 'me'
-      // })
-      // const apiRequest = await window.gapi.client.gmail.users.messages.list({
-      //   'userId': 'me'
-      // })
-      // console.log(window.gapi)
-      // const apiRequest = await window.gapi.client.calendar.events.list({
+    async gmailLabels () {
+      const payload = {scope: 'gmail', discoveryDocs: 'gmail'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting gmail results')
+      const apiRequest = await this.gapiClient.gapi.client.gmail.users.labels.list({
+        'userId': 'me'
+      })
+      this.items = apiRequest.result.labels;
+      console.log(apiRequest)
+    },
+    async gmailMessages () {
+      const payload = {scope: 'gmail', discoveryDocs: 'gmail'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting gmail results')
+      const apiRequest = await this.gapiClient.gapi.client.gmail.users.messages.list({
+        'userId': 'me'
+      })
+      this.items = apiRequest.result.messages;
+    },
+    async otherMethods () {
+      const payload = {scope: 'calendar', discoveryDocs: 'calendar'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting other results')
+      // const apiRequest = await this.gapiClient.gapi.client.calendar.events.list({
       //   'calendarId': 'primary',
       //   'timeMin': (new Date()).toISOString(),
       //   'showDeleted': false,
@@ -94,6 +125,10 @@ export default {
       //   'maxResults': 10,
       //   'orderBy': 'startTime'
       // })
+      const apiRequest = await this.gapiClient.gapi.client.calendar.calendarList.list({
+      })
+
+      // this.items = apiRequest.result.items;
       // const apiRequest = await window.gapi.client.sheets.spreadsheets.values.get({
       //     spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
       //     range: 'Class Data!A2:E',
@@ -113,25 +148,6 @@ export default {
       // const result = JSON.parse(apiRequest.body);
       console.log(apiRequest);
       // this.items = result.items;
-    },
-    ...mapActions('google', ['initClient']),
-    handleClientLoad() {
-      window.gapi.load('client', this.clientInit);
-    },
-    _initClient () {
-      this.initClient({gapi: window.gapi, dDocs: 'apis'})
-    },
-    initGoogleAuth () {
-      // can load the auth2 and client apis from the cdn at once in colon-separated list
-      window.gapi.load('auth2:client', () => {
-        const auth2 = this.gapi.auth2.init({
-          client_id: client_id,
-          cookiepolicy: 'single_host_origin'
-        })
-        auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
-          this.$emit('done', googleUser)
-        }, error => console.log(error))
-      })
     }
   },
   mounted () {
@@ -142,8 +158,9 @@ export default {
     const gapiClient = new GapiClient({})
     console.log(gapiClient)
     gapiClient.initClient().then((gapi) => {
-      this.gapi = gapi
-      console.log(this.gapi)
+      this.gapiClient = gapiClient
+
+      console.log(this.gapiClient)
     })
     if (this.getAPIsLoaded) {
       console.log(this.getAPIs)
