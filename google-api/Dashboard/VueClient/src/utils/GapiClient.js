@@ -1,5 +1,5 @@
 
-
+import GoogleAuthService from './GoogleAuthService'
 
 class GapiClient {
 
@@ -29,7 +29,10 @@ class GapiClient {
     
     this._options = {}
     this.gapi = null
-    this.gapiLoaded = false
+    this.gapiScriptLoaded = false
+
+    this.gapiAuthInitialized = false
+    this.auth = new GoogleAuthService()
 
     if (typeof options === 'object') {
       this._options = Object.assign(this._options, options)
@@ -46,6 +49,19 @@ class GapiClient {
       console.warn('invalid option type. Object type accepted only')
     }
     
+  }
+
+  signIn = () => {
+    console.log(this)
+    this.initAuth().then((auth) => {
+      console.log(auth.authInstance)
+      auth.login()
+    })
+    
+  }
+
+  signOut = () => {
+    this.auth.logout()
   }
 
   loadScript = () => {
@@ -80,10 +96,30 @@ class GapiClient {
         } else {
           this.loadScript().then((gapi) => {
             this.gapi = gapi
-            this.gapiLoaded = true
+            this.gapiScriptLoaded = true
             resolve(this.gapi)
           })
         } 
+      }
+      catch(err) {
+        console.error(err.message)
+        console.error('gapi.js failed to load')
+        reject(err.message)
+      }
+    })
+  }
+
+  initAuth = () => {
+    return new Promise((resolve, reject) => {  
+      try {
+        this.gapi.load('auth2', async ()=>{
+          await this.gapi.client.init({client_id: this._options.client_id, scope: this._options.scope})
+          console.info(`auth init'ed`)
+          this.auth.authInstance = this.gapi.auth2.getAuthInstance()
+          console.log(this.auth)
+          this.gapiAuthInitialized = true
+          resolve(this.auth)
+        })
       }
       catch(err) {
         console.error(err.message)
@@ -103,6 +139,9 @@ class GapiClient {
             client_id: this.optionTypes.client_id
           })
           // this wasn't working when I was resolving outside the load block
+
+          console.info(`client init'ed for dDocs: ${discoveryDocs} and scope: ${scope}`)
+
           resolve(this.gapi)
         })
       }

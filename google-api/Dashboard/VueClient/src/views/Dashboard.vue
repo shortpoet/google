@@ -10,6 +10,7 @@
 // @ is an alias to /src
 import HelloWorld from '@/components/HelloWorld.vue'
 import GoogleIn from '@/components/Auth/GoogleIn.vue'
+import store from '@/store'
 
 export default {
   name: 'Dashboard',
@@ -24,6 +25,10 @@ export default {
   },
   beforeRouteEnter (to, from, next) {
     console.log('before Dashboard enter')
+    // store.dispatch('google/initClient', ).then(() => {
+    //   next()
+    // })
+
     next(vm => {
       next()
     })

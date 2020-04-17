@@ -1,4 +1,5 @@
 import Vue from 'vue';
+import GapiClient from '@/utils/GapiClient'
 
 // import axios from 'axios'
 import {
@@ -18,21 +19,6 @@ import {
 export const state = {
   queriedAPIs: [],
   queriedAPIsLoaded: false,
-  client_id: require('H:/source/repos/google/google-api/js/config/oauth2.keys.json').web.client_id,
-  api_key: require('H:/source/repos/google/google-api/js/config/oauth2.keys.json').web.api_key,
-  discoveryDocs: {
-    urlShortener: ['https://www.googleapis.com/discovery/v1/apis/urlshortener/v1/rest'],
-    apis: ['https://discovery.googleapis.com/$discovery/rest'],
-    calendar: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-    gmail: ["https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest"]
-  },
-  scopes: {
-    // Authorization scopes required by the API; multiple scopes can be
-    // included, separated by spaces.
-    calendar: 'https://www.googleapis.com/auth/calendar.readonly',
-    basic: 'profile email',
-    gmail: 'https://www.googleapis.com/auth/gmail.readonly'
-  },
   googleUser: null,
   isAuth: false,
   gapiClient: null,
@@ -41,6 +27,7 @@ export const state = {
 
 export const getters = {
   getGapiClient: (state) => state.gapiClient,
+  getGapiClientLoaded: (state) => state.gapiClientLoaded,
   getAPIs: (state) => state.queriedAPIs,
   getAPIsLoaded: (state) => state.queriedAPIsLoaded,
   getgoogleUser: (state) => state.googleUser,
@@ -60,58 +47,15 @@ export const mutations = {
 
 export const actions = {
   async initClient ({ state, commit }, options) {
-    return new Promise((resolve, reject) => {
-      console.log(options)
-      // TODO map state to local storage to persist on refresh
-      // if (!state.gapiClientLoaded) {
-      // had to add this to scope the variable througout the 
-      // function otherwise it was lost in client.init() call
-      this._options = {
-        client_id: state.client_id,
-        api_key: state.api_key,
-        cookiepolicy: 'single_host_origin',
-        discoveryDocs: state.discoveryDocs.apis,
-        scope: state.scopes.calendar
-      }
-      if (typeof options === 'object') {
-        this._options = Object.assign(this._options, options)
-        if (options.scope) this._options.scope = state.scopes[`${options.scope}`]
-        if (options.discoveryDocs) this._options.discoveryDocs = state.discoveryDocs[`${options.discoveryDocs}`]
-        // if (options.prompt) prompt = options.prompt
-        // if (!options.clientId) {
-        //   console.warn('clientId is required')
-        // }
-      } else {
-        console.warn('invalid option type. Object type accepted only')
-      }    
-      console.log('initializing google client')
-      // can load the auth2 and client apis from the cdn at once in colon-separated list
-      setTimeout(() => {
-        console.log(this)
-        this._vm.gapi.load('auth2:client', () => {
-          console.log(this._options)
-          console.log(this._options.discoveryDocs)
-          const auth2 = this._vm.gapi.client.init(this._options).then(() => {
-            console.log('client loaded')
-            // this.$emit('done', googleUser)
-            commit(SET_GAPI_CLIENT, this._vm.gapi)
-            console.log(state.gapiClient)
-            commit(SET_GAPI_CLIENT_LOADED, true);
-            commit(SET_GOOGLE_AUTH, true)
-            resolve(state.gapiClient);
-          }).catch(err => {
-            if (err.error) {
-              const error = err.error
-              console.error(
-                'Failed to initialize gapi: %s (status=%s, code=%s)', error.message, error.status, error.code, err)
-              reject(err)
-            }      
-          })
-        })  
-      }, 1000);
-      // resolve(state.gapiClient);
-    // }
-    })
+    console.log('about to init client in storeS')
+    const gapiClient = new GapiClient({})
+    console.log(gapiClient)
+    gapiClient.initClient().then((gapi) => {
+      commit(SET_GAPI_CLIENT, gapiClient)
+      commit(SET_GAPI_CLIENT_LOADED, gapi.client)
+    })  
+    // return new Promise((resolve, reject) => {
+    // })
   },
   handleSignIn({ state, commit }, event) {
     Promise.resolve(state.gapiClient.auth2.getAuthInstance().signIn())
@@ -146,17 +90,6 @@ export const actions = {
         commit(SET_APIs_LOADED, true);
       }          
     })
-  },
-  list () {
-    this._vm.$getGapiClient()
-    .then(gapi => {
-      console.log(gapi)
-      // gapi.sheets.spreadsheet.list()
-      gapi.client.calendar.calendarList.list({
-      }).then((response) => {
-        console.log(response)
-      })
-  })
   }
 }
 

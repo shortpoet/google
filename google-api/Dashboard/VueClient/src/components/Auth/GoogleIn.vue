@@ -1,10 +1,11 @@
 <template>
+  <!-- <div v-if="getGapiClientLoaded" class="google-container"> -->
   <div v-if="gapiClient" class="google-container">
     <div class="button-drawer">
-      <button ref="signinBtn" class="btn btn-google">
+      <button ref="signinBtn" class="btn btn-google" @click="gapiClient.signIn()">
         Sign In
       </button>  
-      <button ref="signoutBtn" class="btn btn-google" @click="handleSignOut">
+      <button ref="signoutBtn" class="btn btn-google" @click="gapiClient.signOut()">
         Sign Out
       </button>
       <BaseSelect
@@ -29,16 +30,11 @@
 </template>
 
 <script>
-import apiConfig from '@/main.js'
 import TableComp from '@/components/Utils/TableComp'
-import { mapGetters, mapActions } from 'vuex'
-import store from '@/store'
-import GapiClient from '@/utils/GapiClient'
+import { mapGetters, mapActions, mapState } from 'vuex'
 import BaseSelect from '@/components/Utils/BaseSelect'
 import axios from 'axios'
-
-const keyFile = require('H:/source/repos/google/google-api/js/config/oauth2.keys.json');
-const client_id = keyFile.web.client_id;
+import GapiClient from '@/utils/GapiClient'
 
 export default {
   name: 'GoogleIn',
@@ -68,7 +64,8 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('google', ['getAPIsLoaded', 'getAPIs']),
+    // ...mapState('google', ['gapiClient']),
+    ...mapGetters('google', ['getGapiClient', 'getGapiClientLoaded']),
     displayItems () {
       return this.selectedDisplay === 'table' ?
       this.items
@@ -76,29 +73,26 @@ export default {
       this.syntaxHighlight(this.items)
     }
   },
-  beforeRouteEnter (to, from, next) {
-    // store.dispatch('google/loadGoogleClient', ).then(() => {
-    //   next()
-    // })
-    next(vm => {
-      // vm.$store.dispatch('google/loadGoogleClient', vm.$refs.signinBtn).then(() => {
-      //   next()
-      // })
-    })
-},
   methods: {
     ...mapActions('google', ['initClient', 'handleSignOut', 'handleClientLoad']),
     initGoogleAuth () {
-      // can load the auth2 and client apis from the cdn at once in colon-separated list
-      window.gapi.load('auth2:client', () => {
-        const auth2 = this.gapi.auth2.init({
-          client_id: client_id,
-          cookiepolicy: 'single_host_origin'
-        })
-        auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
-          this.$emit('done', googleUser)
-        }, error => console.log(error))
+      const gapiClient = new GapiClient({})
+      console.log(gapiClient)
+      gapiClient.initClient().then((gapi) => {
+        this.gapiClient = gapiClient
+        console.log(this.gapiClient)
       })
+
+      // can load the auth2 and client apis from the cdn at once in colon-separated list
+      // window.gapi.load('auth2:client', () => {
+      //   const auth2 = this.gapi.auth2.init({
+      //     client_id: client_id,
+      //     cookiepolicy: 'single_host_origin'
+      //   })
+      //   auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
+      //     this.$emit('done', googleUser)
+      //   }, error => console.log(error))
+      // })
     },
     queryAPIs () {
       let func = this[`${this.selectedQuery}`]
@@ -108,6 +102,7 @@ export default {
       this.selectedQuery = event.target.value
     },
     async getApis () {
+      console.log(this.gapiClient)
       const payload = {scope: 'basic', discoveryDocs: 'apis'}
       await this.gapiClient.initQuery(payload) 
       console.log('getting api results')
@@ -115,6 +110,7 @@ export default {
       this.items = apiRequest.result.items;
     },
     async gmailLabels () {
+      console.log(this.gapiClient)
       const payload = {scope: 'gmail', discoveryDocs: 'gmail'}
       await this.gapiClient.initQuery(payload) 
       console.log('getting gmail results')
@@ -210,20 +206,7 @@ export default {
     },
   },
   mounted () {
-    // this.$store.dispatch('google/loadGoogleClient', this.$refs.signinBtn).then(() => {
-    //   console.log('sign in button inititated')
-    // })
-    // this.initGoogleAuth();
-    const gapiClient = new GapiClient({})
-    console.log(gapiClient)
-    gapiClient.initClient().then((gapi) => {
-      this.gapiClient = gapiClient
-
-      console.log(this.gapiClient)
-    })
-    if (this.getAPIsLoaded) {
-      console.log(this.getAPIs)
-    }
+    this.initGoogleAuth()
   }  
 }
 </script>
