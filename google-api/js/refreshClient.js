@@ -55,12 +55,12 @@ your keyfile, and add a 'redirect_uris' section.  For example:
 ]
 `;
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://mail.google.com/', 'https://www.googleapis.com/auth/spreadsheets'];
+const SCOPES = ['https://mail.google.com/', 'https://www.googleapis.com/auth/spreadsheets', 'https://www.googleapis.com/auth/calendar'];
 
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
-const TOKEN_PATH = '../config/token.json';
+const TOKEN_PATH = 'h:/source/repos/google/google-api/js/config/token.json';
 const tokenPath = path.join(__dirname, TOKEN_PATH);
 console.log(tokenPath)
 class RefreshClient {

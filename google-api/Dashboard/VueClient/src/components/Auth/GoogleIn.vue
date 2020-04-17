@@ -52,6 +52,7 @@ export default {
         {name: 'Get APIs', value: 'getApis'},
         {name: 'Gmail Labels', value: 'gmailLabels'},
         {name: 'Gmail Messages', value: 'gmailMessages'},
+        {name: 'Calendar List', value: 'calendarList'},
         {name: 'Other Methods', value: 'otherMethods'},
       ],
       selectedQuery: null,
@@ -128,6 +129,12 @@ export default {
         'userId': 'me'
       })
       this.items = apiRequest.result.messages;
+    },
+    async calendarList () {
+      axios.get('http://localhost:3030/calendar').then(res => {
+        this.items = res.data.items
+        console.log(res)
+      })
     },
     async otherMethods () {
       const payload = {scope: 'calendar', discoveryDocs: 'calendar'}

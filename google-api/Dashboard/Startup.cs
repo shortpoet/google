@@ -45,6 +45,20 @@ namespace Dashboard
             {
                 configuration.RootPath = "VueClient/dist";
             });
+                        services.AddCors(options =>
+            {
+            // this defines a CORS policy called "default"
+            options.AddPolicy("default", policy =>
+            {
+            // policy.WithOrigins("http://localhost:8080;https://localhost:5004;https://localhost:5003")
+            // policy.WithOrigins("https://localhost:5004")
+            // for some reason it won't recognize the urls if not allow all
+            policy.AllowAnyOrigin()
+                .AllowAnyHeader()
+                .AllowAnyMethod();
+            });
+        });
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -69,6 +83,8 @@ namespace Dashboard
 
             app.UseAuthentication();
             app.UseAuthorization();
+            
+            app.UseCors("default");
 
             app.UseEndpoints(endpoints =>
             {

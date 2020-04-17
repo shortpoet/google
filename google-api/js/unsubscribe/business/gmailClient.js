@@ -249,6 +249,7 @@ const buildMessage = (toEmail, toName) => {
     '',
     'This is a message just to say unsubscribe me.',
     'So... <b>UNSUBSCRIBE!</b>  🤘❤️😎',
+    'This email was sent using an automation script. If you would like to stay in touch, please send me a personal email 😊'
   ];
   const message = messageParts.join('\n');
 
