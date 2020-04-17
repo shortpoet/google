@@ -1,40 +1,40 @@
 <template>
-  <div class="google-container">
+  <div v-if="gapiClient" class="google-container">
     <div class="button-drawer">
-      <button ref="signinBtn" class="btn btn-google" @click="login">
+      <button ref="signinBtn" class="btn btn-google">
         Sign In
       </button>  
-      <button ref="signoutBtn" class="btn btn-google" @click="logout">
+      <button ref="signoutBtn" class="btn btn-google" @click="handleSignOut">
         Sign Out
-      </button>  
-      <button ref="queryBtn" class="btn btn-google" @click="doQuery">
+      </button>
+      <BaseSelect
+        :options="displayOptions"
+        v-model="selectedDisplay"
+      />
+      <BaseSelect
+        :options="queryOptions"
+        v-model="selectedQuery"
+      />
+      <button ref="queryBtn" class="btn btn-google" @click="queryAPIs">
         Query
       </button>
-      <button ref="queryBtn" class="btn btn-google" @click="showCalendar = !showCalendar">
-        Show Calendar
-      </button>
-      <button ref="queryBtn" class="btn btn-google" @click="showGmail = !showGmail">
-        Show Gmail
-      </button>
-      <!-- <button ref="queryBtn" class="btn btn-google" @click="_handleClientLoad">
-        Query Orig
-      </button> -->
     </div>
-    <div class="api-table-container d-flex">
-      <TableComp v-if="getAPIsLoaded" :items="getAPIs" :filter-fields="filterFields" />
-      <TableComp v-if="items" :items="items" :filter-fields="filterFields" />
-      <Calendar v-if="showCalendar" />
-      <Gmail v-if="showGmail" />
+    <div v-if="selectedDisplay === 'table'" class="api-table-container">
+      <TableComp v-if="items" :items="displayItems" :filter-fields="filterFields" />
+    </div>
+    <div v-else-if="selectedDisplay === 'json' && items" class="api-json-container">
+      <pre v-html="displayItems"></pre>
     </div>
   </div>
 </template>
 
 <script>
+import apiConfig from '@/main.js'
 import TableComp from '@/components/Utils/TableComp'
-import Calendar from '@/components/Google/Calendar'
-import Gmail from '@/components/Google/Gmail'
-import { mapGetters, mapActions, mapState } from 'vuex'
+import { mapGetters, mapActions } from 'vuex'
 import store from '@/store'
+import GapiClient from '@/utils/GapiClient'
+import BaseSelect from '@/components/Utils/BaseSelect'
 import axios from 'axios'
 
 const keyFile = require('H:/source/repos/google/google-api/js/config/oauth2.keys.json');
@@ -44,33 +44,151 @@ export default {
   name: 'GoogleIn',
   components: {
     TableComp,
-    Calendar,
-    Gmail
+    BaseSelect
   },
   data () {
     return {
-      filterFields: ['icons', 'kind'],
       items: null,
-      payload: {
-        dDocs: 'apis',
-        action: 'queryAPIs'
-      },
-      showCalendar: false,
-      showGmail: false
+      filterFields: ['icons', 'kind'],
+      gapiClient: null,
+      queryOptions: [
+        {name: 'Select Query Type', value: '', disabled: true},
+        {name: 'Get APIs', value: 'getApis'},
+        {name: 'Gmail Labels', value: 'gmailLabels'},
+        {name: 'Gmail Messages', value: 'gmailMessages'},
+        {name: 'Other Methods', value: 'otherMethods'},
+      ],
+      selectedQuery: null,
+      displayOptions: [
+        {name: 'Select Display Type', value: '', disabled: true},
+        {name: 'JSON', value: 'json'},
+        {name: 'Table', value: 'table'},
+      ],
+      selectedDisplay: null
     }
   },
   computed: {
-    ...mapState('google', ['gapiClient']),
-    ...mapGetters('google', ['getAPIsLoaded', 'getAPIs'])
+    ...mapGetters('google', ['getAPIsLoaded', 'getAPIs']),
+    displayItems () {
+      return this.selectedDisplay === 'table' ?
+      this.items
+      :
+      this.syntaxHighlight(this.items)
+    }
   },
+  beforeRouteEnter (to, from, next) {
+    // store.dispatch('google/loadGoogleClient', ).then(() => {
+    //   next()
+    // })
+    next(vm => {
+      // vm.$store.dispatch('google/loadGoogleClient', vm.$refs.signinBtn).then(() => {
+      //   next()
+      // })
+    })
+},
   methods: {
-    ...mapActions('google', ['initClient', 'handleSignIn', 'handleSignOut', 'queryAPIs', 'list']),
-    login() {
-      this.$gAuth.signIn()
-      console.log(this.$getAuthCode)
+    ...mapActions('google', ['initClient', 'handleSignOut', 'handleClientLoad']),
+    initGoogleAuth () {
+      // can load the auth2 and client apis from the cdn at once in colon-separated list
+      window.gapi.load('auth2:client', () => {
+        const auth2 = this.gapi.auth2.init({
+          client_id: client_id,
+          cookiepolicy: 'single_host_origin'
+        })
+        auth2.attachClickHandler(this.$refs.signinBtn, {}, googleUser => {
+          this.$emit('done', googleUser)
+        }, error => console.log(error))
+      })
     },
-    logout() {
-      this.$gAuth.signOut()
+    queryAPIs () {
+      let func = this[`${this.selectedQuery}`]
+      func()
+    },
+    updateQuery (event) {
+      this.selectedQuery = event.target.value
+    },
+    async getApis () {
+      const payload = {scope: 'basic', discoveryDocs: 'apis'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting api results')
+      const apiRequest = await this.gapiClient.gapi.client.discovery.apis.list()
+      this.items = apiRequest.result.items;
+    },
+    async gmailLabels () {
+      const payload = {scope: 'gmail', discoveryDocs: 'gmail'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting gmail results')
+      const apiRequest = await this.gapiClient.gapi.client.gmail.users.labels.list({
+        'userId': 'me'
+      })
+      this.items = apiRequest.result.labels;
+      console.log(apiRequest)
+    },
+    async gmailMessages () {
+      const payload = {scope: 'gmail', discoveryDocs: 'gmail'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting gmail results')
+      const apiRequest = await this.gapiClient.gapi.client.gmail.users.messages.list({
+        'userId': 'me'
+      })
+      this.items = apiRequest.result.messages;
+    },
+    async otherMethods () {
+      const payload = {scope: 'calendar', discoveryDocs: 'calendar'}
+      await this.gapiClient.initQuery(payload) 
+      console.log('getting other results')
+      // const apiRequest = await this.gapiClient.gapi.client.calendar.events.list({
+      //   'calendarId': 'primary',
+      //   'timeMin': (new Date()).toISOString(),
+      //   'showDeleted': false,
+      //   'singleEvents': true,
+      //   'maxResults': 10,
+      //   'orderBy': 'startTime'
+      // })
+      const apiRequest = await this.gapiClient.gapi.client.calendar.calendarList.list({
+      })
+
+      // this.items = apiRequest.result.items;
+      // const apiRequest = await window.gapi.client.sheets.spreadsheets.values.get({
+      //     spreadsheetId: '1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms',
+      //     range: 'Class Data!A2:E',
+      //   })
+      // let query = "properties has {key='uds' and value='true'} and trashed=false" // and properties has {key='finished' and value='true'}
+      // console.log(window.gapi)
+      // const apiRequest = await window.gapi.client.drive.files.list({
+      //   // q: query,
+      //   pageSize: 20,
+      //   // fields: 'nextPageToken, files(id, name, properties, mimeType, createdTime)'
+      // })
+      // const apiRequest = await window.gapi.client.request({
+      //   'path': '/drive/v3/files',
+      //   'method': 'GET'
+      //   });
+
+      // const result = JSON.parse(apiRequest.body);
+      console.log(apiRequest);
+      // this.items = result.items;
+    },
+    syntaxHighlight(json) {
+      if (typeof json != 'string') {
+        json = JSON.stringify(json, undefined, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+          } else {
+            cls = 'string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'boolean';
+        } else if (/null/.test(match)) {
+          cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
     },
     async doQuery() {
       const token = await window.gapi.auth2.getAuthInstance().grantOfflineAccess()
@@ -90,39 +208,22 @@ export default {
         console.log(res)
       })
     },
-
-    // login () {
-    //   // this.$gapi.getGapiClient()
-    //   this.$getGapiClient()
-    //     .then(gapi => {
-    //       console.log(gapi)
-    //       gapi.client.sheets.spreadsheet.list()
-          
-    //       // gapi.client.calendar.calendarList.list({
-    //       // }).then((res) => {
-    //       //   console.log(res)
-    //       // })
-
-    //       // gapi.client.gmail.users.labels.list({
-    //       //   'userId': 'me'
-    //       // })     
-    //       // .then(response => {
-    //       //   console.log(response)
-    //       // });
-
-
-    //   })
-    // },
-    // logout() {
-    //   this.$logout()
-    // }
   },
   mounted () {
-    // this.initClient({}).then(() => {
+    // this.$store.dispatch('google/loadGoogleClient', this.$refs.signinBtn).then(() => {
     //   console.log('sign in button inititated')
     // })
-    // this.list()
-    console.log(this)
+    // this.initGoogleAuth();
+    const gapiClient = new GapiClient({})
+    console.log(gapiClient)
+    gapiClient.initClient().then((gapi) => {
+      this.gapiClient = gapiClient
+
+      console.log(this.gapiClient)
+    })
+    if (this.getAPIsLoaded) {
+      console.log(this.getAPIs)
+    }
   }  
 }
 </script>
