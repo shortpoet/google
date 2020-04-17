@@ -8,6 +8,10 @@
         Sign Out
       </button>
       <BaseSelect
+        :options="displayOptions"
+        v-model="selectedDisplay"
+      />
+      <BaseSelect
         :options="queryOptions"
         v-model="selectedQuery"
       />
@@ -15,8 +19,11 @@
         Query
       </button>
     </div>
-    <div class="api-table-container">
-      <TableComp v-if="items" :items="items" :filter-fields="filterFields" />
+    <div v-if="selectedDisplay === 'table'" class="api-table-container">
+      <TableComp v-if="items" :items="displayItems" :filter-fields="filterFields" />
+    </div>
+    <div v-else-if="selectedDisplay === 'json' && items" class="api-json-container">
+      <pre v-html="displayItems"></pre>
     </div>
   </div>
 </template>
@@ -50,11 +57,23 @@ export default {
         {name: 'Gmail Messages', value: 'gmailMessages'},
         {name: 'Other Methods', value: 'otherMethods'},
       ],
-      selectedQuery: null
+      selectedQuery: null,
+      displayOptions: [
+        {name: 'Select Display Type', value: '', disabled: true},
+        {name: 'JSON', value: 'json'},
+        {name: 'Table', value: 'table'},
+      ],
+      selectedDisplay: null
     }
   },
   computed: {
     ...mapGetters('google', ['getAPIsLoaded', 'getAPIs']),
+    displayItems () {
+      return this.selectedDisplay === 'table' ?
+      this.items
+      :
+      this.syntaxHighlight(this.items)
+    }
   },
   beforeRouteEnter (to, from, next) {
     // store.dispatch('google/loadGoogleClient', ).then(() => {
@@ -148,6 +167,27 @@ export default {
       // const result = JSON.parse(apiRequest.body);
       console.log(apiRequest);
       // this.items = result.items;
+    },
+    syntaxHighlight(json) {
+      if (typeof json != 'string') {
+        json = JSON.stringify(json, undefined, 2);
+      }
+      json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        var cls = 'number';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+          } else {
+            cls = 'string';
+          }
+        } else if (/true|false/.test(match)) {
+          cls = 'boolean';
+        } else if (/null/.test(match)) {
+          cls = 'null';
+        }
+        return '<span class="' + cls + '">' + match + '</span>';
+      });
     }
   },
   mounted () {
