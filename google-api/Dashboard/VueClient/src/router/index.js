@@ -7,10 +7,13 @@ const routes = function(paths) {
   return paths
     .map(path => {
       return {
-        name: path.name || path.view,
+        name: path.name || path.view || path.component,
         path: path.path,
-        component: resolve => import(`@/views/${path.view}.vue`).then(resolve),
-        beforeEnter: path.beforeEnter || (() => {})
+        // must include '@/' at beginning of template string otherwise it doesn't work
+        component: resolve => import(`@/${path.file}.vue`).then(resolve),
+        // component: path.view ? resolve => import(`@/views/${path.view}.vue`).then(resolve) 
+        //   : resolve => import(`@/components/Auth/${path.component}.vue`).then(resolve) ,
+        beforeEnter: path.beforeEnter || ((to, from, next) => {next()})
       }
     })
     // catch-all route

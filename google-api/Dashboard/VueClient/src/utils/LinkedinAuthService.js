@@ -1,17 +1,11 @@
 import Oidc from 'oidc-client'
 
-// const CLIENT_ID = require('H:/source/repos/google/google-api/js/config/linkedin.config.jsonjson').client_id
-// const CLIENT_SECRET = require('H:/source/repos/google/google-api/js/config/linkedin.config.jsonjson').client_secret
-// const CLIENT_DOMAIN = 'GET https://www.linkedin.com/oauth/v2/authorization'
-
-
-const CLIENT_ID = 'BaXDXqmp6XX6U9UuHSC5dmrnJt6gSlJh'
-const CLIENT_DOMAIN = 'shortpoet.auth0.com/'
+const CLIENT_ID = require('H:/source/repos/google/google-api/js/config/auth0.config.json').CLIENT_ID
+const AUTH0_DOMAIN  = require('H:/source/repos/google/google-api/js/config/auth0.config.json').AUTH0_DOMAIN
 
 const REDIRECT = 'http://localhost:8080/callback.html'
 // const SCOPE = 'openid profile email battles-api'
 const AUDIENCE = 'http://localhost:3030'
-const AUTH0_DOMAIN = 'https://shortpoet.auth0.com'
 
 var mgr = new Oidc.UserManager({
   authority: AUTH0_DOMAIN,
@@ -22,7 +16,7 @@ var mgr = new Oidc.UserManager({
   response_type: 'id_token token',
   scope: 'openid profile email',
   filterProtocolClaims: true,
-  audience: 'BaXDXqmp6XX6U9UuHSC5dmrnJt6gSlJh',
+  audience: CLIENT_ID,
   metadata: {
     issuer: AUTH0_DOMAIN + '/',
     authorization_endpoint: AUTH0_DOMAIN + '/authorize',
