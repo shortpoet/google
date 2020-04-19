@@ -11,7 +11,11 @@
 <script>
 // import { mapGetters } from 'vuex'
 import Oidc from 'oidc-client'
-import mgr from '@/utils/LinkedinAuthService'
+import limgr from '@/utils/LinkedinAuthService'
+import gomgr from '@/utils/GoogleAuthService'
+
+var mgr = limgr
+mgr = gomgr
 
 export default {
   name: 'Callback',
@@ -24,18 +28,31 @@ export default {
   computed: {
   },
   methods: {
+    redirect3 () {
+      var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
+      console.log(mgr)
+      mgr.signinRedirectCallback().then(function (user) {
+        window.location = '/auth'
+      }).catch(function (err) {
+        console.log(err)
+      });
+    },
     async redirect () {
       // debugger
       try {
-        var result = await mgr.signinRedirectCallback()
-        var returnToUrl = '/'
-        if (result.state !== undefined) {
-          console.log(result)
-          // debugger
-          returnToUrl = result.state
-        }
-        this.$router.push({ path: returnToUrl })
+        // var result = await mgr.signinRedirectCallback()
+        
+        // console.log(result)
+        var returnToUrl = '/auth'
+        window.location = '/auth'
+        // if (result.state !== undefined) {
+        //   console.log(result)
+        //   // debugger
+        //   returnToUrl = result.state
+        // }
+        // this.$router.push({ path: returnToUrl })
       } catch (e) {
+        console.error(e)
         this.$router.push({ name: 'Unauthorized' })
       }
     },

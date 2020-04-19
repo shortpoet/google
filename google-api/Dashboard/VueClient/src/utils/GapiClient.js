@@ -1,5 +1,5 @@
 
-import GoogleAuthService from './GoogleAuthService'
+import GapiAuthService from './GapiAuthService'
 
 class GapiClient {
 
@@ -32,7 +32,7 @@ class GapiClient {
     this.gapiScriptLoaded = false
 
     this.gapiAuthInitialized = false
-    this.auth = new GoogleAuthService()
+    this.auth = new GapiAuthService()
 
     if (typeof options === 'object') {
       this._options = Object.assign(this._options, options)

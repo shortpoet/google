@@ -24,7 +24,7 @@
     var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
     console.log(mgr)
     mgr.signinRedirectCallback().then(function (user) {
-      window.location = '/'
+      window.location = '/auth'
     }).catch(function (err) {
       console.log(err)
     });

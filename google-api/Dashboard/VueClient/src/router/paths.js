@@ -24,26 +24,21 @@ const paths = [
     view: 'Auth',
     file: 'views/Auth'
   },
-  // {
-  //   path: '/callback',
-  //   component: 'Callback',
-  //   file: 'components/Auth/Callback'
-  // },
-  // {
-  //   path: '/logincallback',
-  //   component: 'LoginCallback',
-  //   file: 'components/Auth/LoginCallback'
-  // },
-  // {
-  //   path: '/login',
-  //   component: 'Login',
-  //   file: 'components/Auth/Login'
-  // },
-  // {
-  //   path: '/logout',
-  //   component: 'Logout',
-  //   file: 'components/Auth/Logout'
-  // }
+  {
+    path: '/callback',
+    component: 'Callback',
+    file: 'components/Auth/Callback'
+  },
+  {
+    path: '/login',
+    component: 'Login',
+    file: 'components/Auth/Login'
+  },
+  {
+    path: '/logout',
+    component: 'Logout',
+    file: 'components/Auth/Logout'
+  }
 ]
 
 export default paths

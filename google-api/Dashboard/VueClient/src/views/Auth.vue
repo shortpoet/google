@@ -1,8 +1,10 @@
 <template>
   <div class="home">
     <HelloWorld msg="Welcome to Auth"/>
-    <button type="button" class="btn btn-success mx-2" @click="loginAuth">Login Auth Service</button>
-    <button type="button" class="btn btn-success mx-2" @click="loginLinkedin">Login Linkedin Service</button>
+    <button type="button" class="btn btn-success mx-2" @click="loginAuth0">Login Auth0 Service</button>
+    <button type="button" class="btn btn-success mx-2" @click="logoutAuth0">Logout Auth0 Service</button>
+    <button type="button" class="btn btn-success mx-2" @click="loginGoogle">Login Google Service</button>
+    <button type="button" class="btn btn-success mx-2" @click="logoutGoogle">Logout Google Service</button>
   </div>
 </template>
 
@@ -10,9 +12,15 @@
 // @ is an alias to /src
 import HelloWorld from '@/components/HelloWorld.vue'
 import store from '@/store'
-// import AuthService from '@/utils/AuthService'
+import AuthService from '@/utils/AuthService'
 // import AuthUser from '@/utils/AuthUser'
-import mgr from '@/utils/LinkedinAuthService'
+// import a0mgr from '@/utils/LinkedinAuthService'
+
+const a0mgr = new AuthService({authProvider: 'auth0'}).mgr
+const gomgr = new AuthService({authProvider: 'google'}).mgr
+
+
+console.log(a0mgr)
 
 export default {
   name: 'Dashboard',
@@ -25,10 +33,23 @@ export default {
     }
   },
   async created () {
-    this.doAuth()
+    this.doAuthLi()
   },
   methods: {
-    async doAuth () {
+    async doAuthLi () {
+      const liuser = await a0mgr.getUser()
+      if (liuser) {
+        console.log(liuser)
+      } else {
+        // this.loginAuth()
+      }
+      const gouser = await gomgr.getUser()
+      if (gouser) {
+        console.log(gouser)
+      } else {
+        // this.loginAuth()
+      }
+
       // const authService = new AuthService(this.tokenExpiredCallback, '/logincallback')
       // const user = await authService.getUser()
       // if (user && user.isAuthenticated) {
@@ -47,11 +68,26 @@ export default {
     loginAuth () {
       this.$router.push('/login')
     },
-    loginLinkedin () {
-      mgr.signinRedirect()
+    loginAuth0 () {
+      a0mgr.signinRedirect()
       // returnPath ? mgr.signinRedirect({ state: returnPath })
       //   : mgr.signinRedirect()
-    }
+    },
+    loginGoogle () {
+      gomgr.signinRedirect()
+      // returnPath ? mgr.signinRedirect({ state: returnPath })
+      //   : mgr.signinRedirect()
+    },
+    logoutAuth0 () {
+      a0mgr.signoutRedirect()
+      // returnPath ? mgr.signinRedirect({ state: returnPath })
+      //   : mgr.signinRedirect()
+    },
+    logoutGoogle () {
+      gomgr.signoutRedirect()
+      // returnPath ? mgr.signinRedirect({ state: returnPath })
+      //   : mgr.signinRedirect()
+    },
   },
   beforeRouteEnter (to, from, next) {
     console.log('before Auth enter')
