@@ -68,6 +68,9 @@ export default {
   },
   getters: {
     getUserManager: (state) => (authProvider) => {
+      console.log(authProvider)
+      console.log(state[`${authProvider}`])
+      console.log(state[`${authProvider}`].userManager)
       return state[`${authProvider}`].userManager
     },
     getIsAuth: (state) => (authProvider) => {
@@ -103,8 +106,9 @@ export default {
     [SET_USER] (state, newUser) {
       state.user = newUser
     },
-    [RESET_USER] (state) {
-      state.user = null
+    // TODO rename
+    [RESET_USER] (state, authProvider) {
+      state[`${authProvider}`].userManager = null
     },
     [CHANGE_USER_LOADED_STATE] (state, loaded) {
       state.userLoaded = loaded
@@ -114,11 +118,21 @@ export default {
     }
   },
   actions: {
+    logout({getters, dispatch}, {authProvider}) {
+      console.log(authProvider)
+      const mgr = getters.getUserManager(authProvider)
+      mgr.signoutRedirect().then(() => {
+        dispatch('removeAuthService', authProvider)
+      })
+    },
+    removeAuthService ({commit}, authProvider) {
+      // commit(RESET_USER, authProvider)
+    },
     createOidcAuthService ({state}, options) {
       return new AuthService(options).mgr
     },
-    loadOidcAuthService ({ dispatch }, {authProvider, userManager, route}) {
-      // commit(SET_OIDC_AUTH, {authProvider, provider})
+    loadOidcAuthService ({ commit, dispatch }, {authProvider, userManager, route}) {
+      commit(SET_OIDC_AUTH, {authProvider, userManager})
       dispatch('checkAuth', {authProvider, userManager, route})
     },
     checkAuth ({ state, dispatch }, {authProvider, userManager, route}) {
@@ -132,7 +146,8 @@ export default {
           resolve(true)
           return
         }
-
+        console.log('mgr from checkauth')
+        console.log(userManager)
         // this code is repeating itself - have a closer look
         // IN THE MORNING!!!
         const getUserPromise = new Promise((resolve, reject) => {
@@ -141,6 +156,7 @@ export default {
             // console.log('this is the retrieved user')
             // console.log(user)
               if (user) {
+                console.log('about to dispatch was authenticated')
                 dispatch('wasAuthenticated', {authProvider, userManager, user})
               }
               else {
@@ -166,7 +182,10 @@ export default {
     },
     authenticate ({ state, getters, commit, dispatch }, {route, authProvider}) {
       authProvider = authProvider.toLowerCase()
+      console.log(authProvider)
       const mgr = getters.getUserManager(`${authProvider}`)
+      console.log('manager from authenticate')
+      console.log(mgr)
       return mgr.signinRedirect({
         route: route,
         // extraTokenParams: {

@@ -1,4 +1,4 @@
-import Oidc from 'oidc-client'
+const Oidc = require('oidc-client');
 
 /*
 **
@@ -31,6 +31,7 @@ class AuthService {
 
     // console.log(this._options.authProvider)
     const oidcSettings = JSON.parse(process.env[`VUE_APP_${this._options.authProvider}_OIDC_CONFIG`])
+    console.log(oidcSettings)
     // console.log(oidcSettings)
     const mgr = new Oidc.UserManager({
       ...oidcSettings,
@@ -40,7 +41,8 @@ class AuthService {
       //   authProvider: this._options.authProvider
       // },
       redirect_uri: `${oidcSettings.redirect_uri}?authProvider=${encodeURIComponent(this._options.authProvider)}`,
-      // automaticSilentSignin: true,    
+      automaticSilentRenew: false,      
+      automaticSilentSignin: true,    
       userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })
     })
 

@@ -5,41 +5,23 @@
     <button type="button" class="btn btn-success mx-2" @click="logoutAuth0">Logout Auth0 Service</button>
     <button type="button" class="btn btn-success mx-2" @click="loginGoogle">Login Google Service</button>
     <button type="button" class="btn btn-success mx-2" @click="logoutGoogle">Logout Google Service</button>
-    <div
-      v-if="getUserLoaded(authProvider)"
-    >
-    <p>
-      You are signed in as:
-    </p>
-    <div style="width:100%;max-width:640px;height: 200px;margin: 0 auto;font-family: monospace;" v-html="userDisplay(authProvider)"></div>
-    <p>
-      Id token
-    </p>
-    <p>
-      expires {{ new Date(getOidcIdTokenExp(authProvider)).toISOString() }}
-    </p>
-    <textarea readonly style="width:100%;max-width:640px;height: 200px;margin: 0 auto;font-family: monospace;" v-model="getToken"></textarea>
-
-  </div>
-  <p v-else>You are not signed in</p>
-
+    <UserDisplay :auth-provider="'auth0'" />
+    <UserDisplay :auth-provider="'google'" />
   </div>
 </template>
 
 <script>
 // @ is an alias to /src
+import UserDisplay from '@/components/Auth/UserDisplay.vue'
 import HelloWorld from '@/components/HelloWorld.vue'
 import AuthService from '@/utils/AuthService'
 import { mapGetters, mapActions, mapState } from 'vuex'
-import jsonMarkup from 'json-markup'
-
-// const a0mgr = new AuthService({authProvider: 'auth0'}).mgr
-// const gomgr = new AuthService({authProvider: 'google'}).mgr
 
 export default {
   name: 'AuthIn',
   components: {
-    HelloWorld
+    HelloWorld,
+    UserDisplay
   },
   data () {
     return {
@@ -49,29 +31,19 @@ export default {
   },
   computed: {
     ...mapGetters('auth', ['getIsAuth', 'getUserLoaded', 'getOidcIdTokenExp', 'getOidcIdToken', 'getUser']),
-    getToken () {
-      return this.getOidcIdToken(this.authProvider)
-    }
   },
   async created () {
     // this.doAuthLi()
     console.log(this)
     // console.log(this.getOidcIdToken(this.authProvider))
     const a0mgr = await this.createOidcAuthService({authProvider: 'auth0'})
-    // const gomgr = await this.createOidcAuthService({authProvider: 'google'})
+    const gomgr = await this.createOidcAuthService({authProvider: 'google'})
+    console.log(gomgr)
     this.loadOidcAuthService({authProvider: 'auth0', userManager: a0mgr, route: this.$route.fullPath})
-    if (this.getUserLoaded) {
-      // console.log(this.getOidcIdToken(this.authProvider))
-    }
-    // this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route.fullPath})
+    this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route.fullPath})
   },
   methods: {
-    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate']),
-    userDisplay (authProvider) {
-      return jsonMarkup(this.getUser(authProvider))
-    },
-    async doAuthLi () {
-    },
+    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate', 'logout']),
     tokenExpiredCallback () {
       // this.loadUser(new AuthUser())
     },
@@ -80,6 +52,7 @@ export default {
       this.authenticate({route: this.$route.fullPath, authProvider: 'auth0'})
     },
     loginGoogle () {
+      this.authenticate({route: this.$route.fullPath, authProvider: 'google'})
     },
     logoutAuth0 () {
       // a0mgr.signoutRedirect()
@@ -87,7 +60,7 @@ export default {
       // //   : mgr.signinRedirect()
     },
     logoutGoogle () {
-      // gomgr.signoutRedirect()
+      this.logout({authProvider: 'google'})
       // // returnPath ? mgr.signinRedirect({ state: returnPath })
       // //   : mgr.signinRedirect()
     },
