@@ -2,8 +2,8 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 // import VueCookies from 'vue-cookies'
 
-// import StoreAuth from '@/store/modules/StoreAuth'
-import StoreGoogle from '@/store/modules/StoreGoogle'
+import StoreAuth from '@/store/modules/StoreAuth'
+import StoreGapi from '@/store/modules/StoreGapi'
 
 import {
 } from '@/store/mutation-types'
@@ -25,8 +25,8 @@ export const rootGetters = {
 
 export default new Vuex.Store({
   modules: {
-    // auth: StoreAuth,
-    google: StoreGoogle
+    auth: StoreAuth,
+    gapi: StoreGapi
   },
   state: {
     environment: process.env.NODE_ENV === 'development' ? 'development' : 'production'

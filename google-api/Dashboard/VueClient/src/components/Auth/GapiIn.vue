@@ -3,10 +3,10 @@
   <div v-if="gapiClient" class="google-container">
     <div class="button-drawer">
       <button ref="signinBtn" class="btn btn-google" @click="gapiClient.signIn()">
-        Sign In
+        Gapi Sign In
       </button>  
       <button ref="signoutBtn" class="btn btn-google" @click="gapiClient.signOut()">
-        Sign Out
+        Gapi Sign Out
       </button>
       <BaseSelect
         :options="displayOptions"
@@ -17,7 +17,7 @@
         v-model="selectedQuery"
       />
       <button ref="queryBtn" class="btn btn-google" @click="queryAPIs">
-        Query
+        Gapi Query
       </button>
     </div>
     <div v-if="selectedDisplay === 'table'" class="api-table-container">
@@ -65,8 +65,8 @@ export default {
     }
   },
   computed: {
-    // ...mapState('google', ['gapiClient']),
-    ...mapGetters('google', ['getGapiClient', 'getGapiClientLoaded']),
+    // ...mapState('gapi', ['gapiClient']),
+    ...mapGetters('gapi', ['getGapiClient', 'getGapiClientLoaded']),
     displayItems () {
       return this.selectedDisplay === 'table' ?
       this.items
@@ -75,7 +75,7 @@ export default {
     }
   },
   methods: {
-    ...mapActions('google', ['initClient', 'handleSignOut', 'handleClientLoad']),
+    ...mapActions('gapi', ['initClient', 'handleSignOut', 'handleClientLoad']),
     initGoogleAuth () {
       const gapiClient = new GapiClient({})
       console.log(gapiClient)

@@ -1,25 +1,22 @@
 <template>
   <div class="home">
     <img alt="Vue logo" src="../assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-    <GoogleIn @done="onUserLoggedIn"/>
-    <LinkedinIn />
+    <HelloWorld msg="Welcome to Dashboard"/>
+    <GapiIn @done="onUserLoggedIn"/>
   </div>
 </template>
 
 <script>
 // @ is an alias to /src
 import HelloWorld from '@/components/HelloWorld.vue'
-import GoogleIn from '@/components/Auth/GoogleIn.vue'
-import LinkedinIn from '@/components/Auth/LinkedinIn.vue'
+import GapiIn from '@/components/Auth/GapiIn.vue'
 import store from '@/store'
 
 export default {
   name: 'Dashboard',
   components: {
     HelloWorld,
-    GoogleIn,
-    LinkedinIn
+    GapiIn
   },
   methods: {
     onUserLoggedIn (user) {

@@ -29,10 +29,9 @@ class AuthService {
       console.warn('invalid option type. Object type accepted only')
     }
 
-    console.log(this._options.authProvider)
-    console.log()
+    // console.log(this._options.authProvider)
     const oidcSettings = JSON.parse(process.env[`VUE_APP_${this._options.authProvider}_OIDC_CONFIG`])
-    console.log(oidcSettings)
+    // console.log(oidcSettings)
     const mgr = new Oidc.UserManager({
       ...oidcSettings,
       filterProtocolClaims: true,
@@ -40,8 +39,6 @@ class AuthService {
     })
 
     this.mgr = mgr
-    console.log(this.mgr)
-    this.mgrLoaded = !!(this.mgr.settings)
     
     // disable logging in production
     Oidc.Log.logger = console
