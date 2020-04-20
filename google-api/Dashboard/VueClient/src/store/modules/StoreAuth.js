@@ -131,6 +131,9 @@ export default {
           resolve(true)
           return
         }
+
+        // this code is repeating itself - have a closer look
+        // IN THE MORNING!!!
         const getUserPromise = new Promise((resolve, reject) => {
           // console.log(state[`${authProvider}`])
           userManager.getUser().then((user) => {
