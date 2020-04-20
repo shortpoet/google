@@ -35,6 +35,8 @@ class AuthService {
     const mgr = new Oidc.UserManager({
       ...oidcSettings,
       filterProtocolClaims: true,
+      loadUserInfo: true,
+      // automaticSilentSignin: true,    
       userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })
     })
 

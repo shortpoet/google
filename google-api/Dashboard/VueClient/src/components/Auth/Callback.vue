@@ -29,7 +29,7 @@ export default {
   },
   methods: {
     redirect3 () {
-      var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
+      var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage, loadUserInfo: true })});
       console.log(mgr)
       mgr.signinRedirectCallback().then(function (user) {
         window.location = '/auth'
@@ -67,7 +67,7 @@ export default {
   },
   created: function () {
     console.log(this)
-    this.redirect()
+    this.redirect3()
     // this.redirect2()
     // new Oidc.UserManager({ response_mode: 'query' })
     //   .signinRedirectCallback()

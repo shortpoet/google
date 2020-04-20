@@ -46,7 +46,7 @@ export default {
   state: {
     callbackRoute: '/callback',
     auth0: {
-      auth: null,
+      userManager: null,
       user: {
         access_token: null,
         id_token: null,
@@ -56,7 +56,7 @@ export default {
       }
     },
     google: {
-      auth: null,
+      userManager: null,
       user: {
         access_token: null,
         id_token: null,
@@ -67,35 +67,37 @@ export default {
     }
   },
   getters: {
-    getAuthService: (state) => (type) => {
-      return state[`${type}`].auth
+    getUserManager: (state) => (authProvider) => {
+      return state[`${authProvider}`].userManager
     },
-    getIsAuth: (state) => (type) => {
-      return !!(state[`${type}`].auth)
+    getIsAuth: (state) => (authProvider) => {
+      return !!(state[`${authProvider}`].userManager)
     },
-    getOidcIdToken: (state) => (type) => {
-      return tokenIsExpired(state[`${type}`].id_token) ? null : state[`${type}`].id_token;
+    getOidcIdToken: (state) => (authProvider) => {
+      console.log()
+      return tokenIsExpired(state[`${authProvider}`].id_token) ? null : state[`${authProvider}`].id_token;
     },
-    getOidcIdTokenExp: (state) => (type) => {
-      return tokenExp(state[`${type}`].id_token);
+    getOidcIdTokenExp: (state) => (authProvider) => {
+      return tokenExp(state[`${authProvider}`].id_token);
     },
-    // getUser: (state) => (type) => {
-    //   return state[`${type}`].user.user
-    // },
+    getUser: (state) => (authProvider) => {
+      // console.log(state[`${authProvider}`].user.user)
+      return state[`${authProvider}`].user.user
+    },
     isAuthenticated (state) {
       return state.isAuthenticated
     }
   },
   mutations: {
-    [SET_OIDC_AUTH] (state, {type, provider}) {
-      state[`${type}`].auth = provider
+    [SET_OIDC_AUTH] (state, {authProvider, userManager}) {
+      state[`${authProvider}`].userManager = userManager
     },
-    [SET_OIDC_AUTH_USER] (state, {provider, user}) {
-      state[`${provider}`].id_token = user.id_token
-      state[`${provider}`].access_token = user.access_token
-      state[`${provider}`].user = user.profile
-      state[`${provider}`].scopes = user.scopes
-      state[`${provider}`].error = null
+    [SET_OIDC_AUTH_USER] (state, {authProvider, user}) {
+      state[`${authProvider}`].user.id_token = user.id_token
+      state[`${authProvider}`].user.access_token = user.access_token
+      state[`${authProvider}`].user.user = user.profile
+      state[`${authProvider}`].user.scopes = user.scopes
+      state[`${authProvider}`].user.error = null
     },
     [SET_USER] (state, newUser) {
       state.user = newUser
@@ -114,10 +116,14 @@ export default {
     createOidcAuthService ({state}, options) {
       return new AuthService(options).mgr
     },
-    loadOidcAuthService ({ commit, getters }, {type, provider}) {
-      commit(SET_OIDC_AUTH, {type, provider})
+    loadOidcAuthService ({ dispatch }, {authProvider, userManager, route}) {
+      // commit(SET_OIDC_AUTH, {authProvider, provider})
+      dispatch('checkAuth', {authProvider, userManager, route})
     },
-    checkAuth ({ state, dispatch }, {route, provider}) {
+    checkAuth ({ state, dispatch }, {authProvider, userManager, route}) {
+      // console.log(authProvider)
+      // console.log(userManager)
+      // console.log(route)
       return new Promise((resolve) => {
         var hasAccess = true
         // this is when installing checkAuth as global route guard
@@ -126,56 +132,65 @@ export default {
           return
         }
         const getUserPromise = new Promise((resolve, reject) => {
-          state[`${provider}`].getUser.then((user) => {
+          // console.log(state[`${authProvider}`])
+          userManager.getUser().then((user) => {
+            console.log('this is the retrieved user')
+            console.log(user)
             resolve(user)
           }).catch(err => {
             console.error(err)
-            console.info(`no user in auth service: ${provider}`)
+            console.info(`no user in auth service: ${authProvider}`)
             resolve(null)
           })
         })
         getUserPromise.then((user) => {
+          console.log('this would be the user')
+          console.log(user)
           if (user) {
-            dispatch('wasAuthenticated', {provider, user})
+            dispatch('wasAuthenticated', {authProvider, userManager, user})
           }
           else {
             hasAccess = false
-            if (route.meta.protected) {
-              dispatch('authenticate', {route, provider})
-            }
+            // if (route.meta.protected) {
+              dispatch('authenticate', {route, authProvider})
+            // }
           }
         })
         resolve(hasAccess)
       })
     },
-    wasAuthenticated ({commit}, {provider, user}) {
-      commit(SET_OIDC_AUTH, {provider, user})
+    wasAuthenticated ({commit, dispatch}, {authProvider, userManager, user}) {
+      // console.log(authProvider)
+      // console.log(user)
+      commit(SET_OIDC_AUTH, {authProvider, userManager})
+      dispatch('setUser', authProvider)
     },
-    authenticate ({ state, getters, commit, dispatch }, {route, provider}) {
-      provider = provider.toLowerCase()
-      const mgr = getters.getAuthService(`${provider}`)
+    authenticate ({ state, getters, commit, dispatch }, {route, authProvider}) {
+      authProvider = authProvider.toLowerCase()
+      const mgr = getters.getUserManager(`${authProvider}`)
       return mgr.signinRedirect(route).catch(function (err) {
         console.error('error from authenticate action')
         console.error(err)
       });
     },
-    getUser ({getters, dispatch}, provider) {
-      const mgr = getters.getAuthService(`${provider}`)
-      if(mgr.user) {
-        return mgr.user
-      } else {
-        dispatch('setUser', provider).then((user) => {
-          return user
-        })
-      }
-    },
-    async setUser ({getters, commit}, provider) {
-      const mgr = getters.getAuthService(`${provider}`)
+    // getUser ({state, dispatch}, provider) {
+    //   if(state[`${provider}`].user) {
+    //     return state[`${provider}`].user
+    //   } else {
+    //     dispatch('setUser', provider).then((user) => {
+    //       return user
+    //     })
+    //   }
+    // },
+    async setUser ({getters, commit}, authProvider) {
+      const mgr = getters.getUserManager(`${authProvider}`)
       console.log(mgr)
       const user = await mgr.getUser()
-      console.log(user)
-      commit(SET_OIDC_AUTH_USER, {provider: provider, user: user})
-      return user
+      if (user) {
+        // console.log(user)
+        commit(SET_OIDC_AUTH_USER, {authProvider: authProvider, user: user})
+        return user  
+      }
     },
     callApi ({ commit, state, getters, rootGetters }, url) {
       console.log('#### loading API data from action ####')

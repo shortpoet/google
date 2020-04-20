@@ -6,17 +6,17 @@
     <button type="button" class="btn btn-success mx-2" @click="loginGoogle">Login Google Service</button>
     <button type="button" class="btn btn-success mx-2" @click="logoutGoogle">Logout Google Service</button>
     <div
-      v-if="getIsAuth('google')"
+      v-if="getIsAuth(authProvider)"
     >
     <p>
       You are signed in as:
     </p>
-    <div style="width:100%;max-width:640px;height: 200px;margin: 0 auto;font-family: monospace;" v-html="userDisplay('google')"></div>
+    <div style="width:100%;max-width:640px;height: 200px;margin: 0 auto;font-family: monospace;" v-html="userDisplay(authProvider)"></div>
     <p>
       Id token
     </p>
     <p>
-      expires {{ new Date(getOidcIdTokenExp('google')).toISOString() }}
+      expires {{ new Date(getOidcIdTokenExp(authProvider)).toISOString() }}
     </p>
     <textarea readonly style="width:100%;max-width:640px;height: 200px;margin: 0 auto;font-family: monospace;" v-model="getOidcIdToken"></textarea>
 
@@ -43,26 +43,28 @@ export default {
   },
   data () {
     return {
-      user: null
+      user: null,
+      authProvider: 'auth0'
     }
   },
   computed: {
-    ...mapGetters('auth', ['getIsAuth', 'getOidcIdTokenExp', 'getOidcIdToken'])
+    ...mapGetters('auth', ['getIsAuth', 'getOidcIdTokenExp', 'getOidcIdToken', 'getUser'])
   },
   async created () {
     // this.doAuthLi()
     console.log(this)
+    console.log(this.getOidcIdToken(this.authProvider))
     const a0mgr = await this.createOidcAuthService({authProvider: 'auth0'})
     const gomgr = await this.createOidcAuthService({authProvider: 'google'})
-    this.loadOidcAuthService({type: 'auth0', provider: a0mgr})
-    this.loadOidcAuthService({type: 'google', provider: gomgr})
+    this.loadOidcAuthService({authProvider: 'auth0', userManager: a0mgr, route: this.$route.fullPath})
+    this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route.fullPath})
   },
   methods: {
-    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate', 'getUser']),
-    async userDisplay (provider) {
-      console.log(provider)
-      console.log(await this.getUser(provider))
-      return jsonMarkup(await this.getUser(provider))
+    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate']),
+    userDisplay (authProvider) {
+      console.log(authProvider)
+      console.log(this.getUser(authProvider))
+      return jsonMarkup(this.getUser(authProvider))
     },
     async doAuthLi () {
     },
@@ -70,6 +72,7 @@ export default {
       // this.loadUser(new AuthUser())
     },
     loginAuth0 () {
+      console.log('commencing auth0 login from authin')
       this.authenticate({route: this.$route.fullPath, provider: 'auth0'})
     },
     loginGoogle () {
