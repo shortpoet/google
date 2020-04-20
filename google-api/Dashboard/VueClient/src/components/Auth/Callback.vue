@@ -9,13 +9,7 @@
 </template>
 
 <script>
-// import { mapGetters } from 'vuex'
-import Oidc from 'oidc-client'
-import limgr from '@/utils/LinkedinAuthService'
-import gomgr from '@/utils/GoogleAuthService'
-
-var mgr = limgr
-mgr = gomgr
+import { mapActions } from 'vuex'
 
 export default {
   name: 'Callback',
@@ -28,54 +22,31 @@ export default {
   computed: {
   },
   methods: {
-    redirect3 () {
-      var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage, loadUserInfo: true })});
-      console.log(mgr)
-      mgr.signinRedirectCallback().then(function (user) {
-        window.location = '/auth'
-      }).catch(function (err) {
-        console.log(err)
-      });
-    },
+    ...mapActions('auth', ['createOidcAuthService']),
     async redirect () {
-      // debugger
+      let authProvider
+      let returnPath = '/auth'
       try {
-        // var result = await mgr.signinRedirectCallback()
-        
-        // console.log(result)
-        var returnToUrl = '/auth'
-        window.location = '/auth'
-        // if (result.state !== undefined) {
-        //   console.log(result)
-        //   // debugger
-        //   returnToUrl = result.state
-        // }
-        // this.$router.push({ path: returnToUrl })
+        authProvider = this.$route.query.authProvider
+        this.createOidcAuthService({authProvider: authProvider}).then((mgr) => {
+          console.log(mgr)
+          mgr.signinRedirectCallback().then((user) => {
+            console.log(user)
+            // this can be implemented in authservice currently undefined
+            // console.log(user.isAuthenticated)
+            this.$router.push(returnPath)
+          })
+        })
       } catch (e) {
         console.error(e)
-        this.$router.push({ name: 'Unauthorized' })
+        console.log('error with auth provider query')
+        // TODO
+        // this.$router.push({ name: 'Unauthorized' })
       }
     },
-    redirect2 () {
-      new Oidc.UserManager({ response_mode: 'query' }).signinRedirectCallback()
-        .then(function () {
-          window.location = 'index.html'
-        }).catch(function (e) {
-          console.error(e)
-        })
-    }
   },
   created: function () {
-    console.log(this)
-    this.redirect3()
-    // this.redirect2()
-    // new Oidc.UserManager({ response_mode: 'query' })
-    //   .signinRedirectCallback()
-    //   .then(function () {
-    //     window.location = 'index.html'
-    //   }).catch(function (e) {
-    //     console.error(e)
-    //   })
+    this.redirect()
   }
 }
 </script>

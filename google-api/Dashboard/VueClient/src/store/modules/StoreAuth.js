@@ -73,15 +73,16 @@ export default {
     getIsAuth: (state) => (authProvider) => {
       return !!(state[`${authProvider}`].userManager)
     },
+    getUserLoaded: (state) => (authProvider) => {
+      return !!(state[`${authProvider}`].user.user)
+    } ,
     getOidcIdToken: (state) => (authProvider) => {
-      console.log()
-      return tokenIsExpired(state[`${authProvider}`].id_token) ? null : state[`${authProvider}`].id_token;
+      return tokenIsExpired(state[`${authProvider}`].id_token) ? null : state[`${authProvider}`].user.id_token;
     },
     getOidcIdTokenExp: (state) => (authProvider) => {
-      return tokenExp(state[`${authProvider}`].id_token);
+      return tokenExp(state[`${authProvider}`].user.id_token);
     },
     getUser: (state) => (authProvider) => {
-      // console.log(state[`${authProvider}`].user.user)
       return state[`${authProvider}`].user.user
     },
     isAuthenticated (state) {
@@ -137,27 +138,22 @@ export default {
         const getUserPromise = new Promise((resolve, reject) => {
           // console.log(state[`${authProvider}`])
           userManager.getUser().then((user) => {
-            console.log('this is the retrieved user')
-            console.log(user)
-            resolve(user)
+            // console.log('this is the retrieved user')
+            // console.log(user)
+              if (user) {
+                dispatch('wasAuthenticated', {authProvider, userManager, user})
+              }
+              else {
+                hasAccess = false
+                // if (route.meta.protected) {
+                dispatch('authenticate', {route, authProvider})
+                // }
+              }    
           }).catch(err => {
             console.error(err)
             console.info(`no user in auth service: ${authProvider}`)
             resolve(null)
           })
-        })
-        getUserPromise.then((user) => {
-          console.log('this would be the user')
-          console.log(user)
-          if (user) {
-            dispatch('wasAuthenticated', {authProvider, userManager, user})
-          }
-          else {
-            hasAccess = false
-            // if (route.meta.protected) {
-              dispatch('authenticate', {route, authProvider})
-            // }
-          }
         })
         resolve(hasAccess)
       })
@@ -171,7 +167,15 @@ export default {
     authenticate ({ state, getters, commit, dispatch }, {route, authProvider}) {
       authProvider = authProvider.toLowerCase()
       const mgr = getters.getUserManager(`${authProvider}`)
-      return mgr.signinRedirect(route).catch(function (err) {
+      return mgr.signinRedirect({
+        route: route,
+        // extraTokenParams: {
+        //   authProvider: authProvider
+        // },
+        // extraQueryParams: {
+        //   authProvider: authProvider
+        // }
+      }).catch(function (err) {
         console.error('error from authenticate action')
         console.error(err)
       });
@@ -187,7 +191,7 @@ export default {
     // },
     async setUser ({getters, commit}, authProvider) {
       const mgr = getters.getUserManager(`${authProvider}`)
-      console.log(mgr)
+      // console.log(mgr)
       const user = await mgr.getUser()
       if (user) {
         // console.log(user)

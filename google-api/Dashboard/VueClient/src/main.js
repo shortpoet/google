@@ -11,7 +11,7 @@ require('bootstrap')
 require('bootstrap/dist/css/bootstrap.css')
 
 Vue.config.productionTip = false
-
+Vue.config.devtools = false;
 Vue.prototype.jquery = jquery;
 
 new Vue({

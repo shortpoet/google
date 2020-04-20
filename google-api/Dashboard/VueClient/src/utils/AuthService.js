@@ -36,6 +36,10 @@ class AuthService {
       ...oidcSettings,
       filterProtocolClaims: true,
       loadUserInfo: true,
+      // extraQueryParams: {
+      //   authProvider: this._options.authProvider
+      // },
+      redirect_uri: `${oidcSettings.redirect_uri}?authProvider=${encodeURIComponent(this._options.authProvider)}`,
       // automaticSilentSignin: true,    
       userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })
     })
