@@ -12,6 +12,8 @@ export default {
   async created () {
     const authProvider = this.$route.query.authProvider
     const returnTo = this.$route.query.returnTo
+    console.log(authProvider)
+    console.log(returnTo)
     this.authenticate({route: returnTo, authProvider: authProvider})
   },
   mounted () {

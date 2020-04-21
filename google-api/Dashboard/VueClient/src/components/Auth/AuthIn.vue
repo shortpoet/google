@@ -44,11 +44,12 @@ export default {
       // this.loadUser(new AuthUser())
     },
     loginAuth0 () {
-      console.log('commencing auth0 login from authin')
-      this.authenticate({route: this.$route.fullPath, authProvider: 'auth0'})
+      this.$router.push({path: '/login', query:{returnTo: this.$route.fullPath, authProvider: 'auth0'}})
+      // this.authenticate({route: this.$route.fullPath, authProvider: 'auth0'})
     },
     loginGoogle () {
-      this.authenticate({route: this.$route.fullPath, authProvider: 'google'})
+      this.$router.push({path: '/login', query:{returnTo: this.$route.fullPath, authProvider: 'google'}})
+      // this.authenticate({route: this.$route.fullPath, authProvider: 'google'})
     },
     logoutAuth0 () {
       this.logout({authProvider: 'auth0'})

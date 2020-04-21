@@ -149,7 +149,6 @@ export default {
               }
               else {
                 hasAccess = false
-                console.log(route.meta)
                 if (route.meta.protected) {
                   dispatch('authenticate', {route, authProvider})
                 }
