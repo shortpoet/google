@@ -1,17 +1,148 @@
-import Oidc from 'oidc-client'
+// https://codedialogue.com/accessing-linkedin-api-with-react-and-node-98932f5c58a2
+// https://github.com/imjuoy/SignIn-With-LinkedIn/blob/master/server.js
+// https://github.com/request/request#oauth-signing
 
-const oidcSettings = JSON.parse(process.env.VUE_APP_AUTH0_OIDC_CONFIG)
+const axios = require('axios');
+const querystring = require('querystring');
+var crypto = require("crypto");
+var https = require('https');
 
-var limgr = new Oidc.UserManager({
-  ...oidcSettings,
-  filterProtocolClaims: true,
-  userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })
-})
+const LinkinClient = require('H:/source/repos/google/google-api/js/LinkedinClient')
+class LinkedInAuthService {
 
-// disable loggin in production
-Oidc.Log.logger = console
-Oidc.Log.level = Oidc.Log.INFO
+  constructor(options) {
 
-console.log(limgr)
+    this.config = {
+      base_url: 'https://www.linkedin.com/oauth/v2',
+      client_id: require('H:/source/repos/google/google-api/js/config/linkedin.config.json').client_id,
+      client_secret: require('H:/source/repos/google/google-api/js/config/linkedin.config.json').client_secret,
+      redirect_uri: 'http://localhost:3030/linkedin/callback',
+      state: crypto.randomBytes(16).toString('hex'),
+      scope: 'r_emailaddress r_liteprofile w_member_social'
+    }
 
-export default limgr
+    this.endpoints = {
+      me: '/v2/me'
+    }
+    
+    this.linkedinLoaded = false
+    this.access_code = null
+    this.authToken = null
+    this.authTokenExpiry = null
+    this.isAuth = false
+
+    const qsCode = querystring.stringify({
+      response_type: "code",
+      client_id: this.config.client_id,
+      redirect_uri: this.config.redirect_uri,
+      state: this.config.state,
+      scope: this.config.scope
+    })
+    this.authUrl = `${this.config.base_url}/authorization?${qsCode}`
+
+    this.tokenUrl = null
+  }
+
+  signInClient = () => {
+    return new Promise((resolve, reject) => {
+      try {
+        const lc = new LinkinClient();
+        lc.signIn().then(res => {
+          console.log(res)
+        })
+      } catch (e) {
+        reject(e);
+      }
+    });    
+  }
+
+  handshakeAxios = (query) => {
+    return new Promise((resolve, reject) => {
+      try {
+        const error = query.error;
+        const error_description = query.error_description;
+        const state = query.state;
+        const code = query.code;
+    
+        // handle error
+        if (error) {
+          console.error(error, error_description)
+          next(new Error(error));
+        }
+    
+        // validate state
+    
+        if (this.config.state !== state) {
+          return
+        }
+  
+        this.access_code = code
+        console.log(code)
+      
+        const qsToken = querystring.stringify({
+          grant_type: "authorization_code",
+          code: this.access_code,
+          redirect_uri: this.config.redirect_uri,
+          client_id: this.config.client_id,
+          client_secret: this.config.client_secret
+        })
+    
+        this.tokenUrl = `${this.config.base_url}/accessToken?${qsToken}`
+
+        console.log(this.tokenUrl)
+        axios
+          .post(this.tokenUrl)
+          .then(response => {
+            const status = response.status
+            const config = response.config
+            const headers = response.headers
+            const resRequest = response.request
+            const data = response.data
+            // console.log(resRequest)
+            // console.log(response)
+            console.log(data)
+            this.authToken = data.access_token
+            this.authTokenExpiry = data.expires_in
+            this.isAuth = true
+            resolve(this.authToken)
+          })
+      
+      } catch (e) {
+        reject(e);
+      }
+    });    
+  }
+
+  signOut = () => {
+    this.auth.logout()
+  }
+
+  queryApi(endpoint){
+    return new Promise((resolve, reject) => {
+      try {
+        const url = `https://api.linkedin.com${endpoint}`
+        console.log(url)
+        axios.get(url, {
+          headers: {
+          'x-Requested-With': 'XMLHttpRequest',
+          Authorization: 'Bearer ' + this.authToken,
+          'Content-Type': 'application/json; charset=utf-8',
+          'Access-Control-Expose-Headers': 'Content-Disposition',
+          'Connection': 'Keep-Alive'
+        },
+        responseType:'json',
+        withCredentials: true,
+        }).then((res) => {
+          // console.log(res);
+          resolve(res);
+        })
+      } catch (error) {
+        console.error(error); 
+        reject(error);
+      }
+    })
+  }
+
+}
+
+module.exports = LinkedInAuthService

@@ -85,6 +85,9 @@ export default {
     getUser: (state) => (authProvider) => {
       return state[`${authProvider}`].user.user
     },
+    getAccessToken: (state) => (authProvider) => {
+      return state[`${authProvider}`].user.access_token
+    },
     isAuthenticated (state) {
       return state.isAuthenticated
     }
@@ -118,13 +121,28 @@ export default {
     logout({getters, dispatch}, {authProvider}) {
       console.log(authProvider)
       const mgr = getters.getUserManager(authProvider)
-      mgr.signoutRedirect('/about').then(() => {
+      mgr.signoutRedirect().then(() => {
         dispatch('removeAuthService', authProvider)
+        dispatch('clearStorage', authProvider)
+      })
+    },
+    clearStorage ({state}, authProvider) {
+      let storageOption = 'local'
+      let storage = window[`${storageOption}Storage`]
+      Object.entries(storage).forEach(item => {
+        let key = item[0]
+        if (key.startsWith('oidc.user') && key.includes(authProvider)){
+          console.log('Deleting localStorage key: ' + key)
+          storage.removeItem(key)
+        } else {
+          console.log('Skipping localStorage key: ' + key)
+        }
       })
     },
     removeAuthService ({commit}, authProvider) {
       // commit(RESET_USER, authProvider)
     },
+
     createOidcAuthService ({state}, options) {
       return new AuthService(options).mgr
     },
@@ -194,9 +212,16 @@ export default {
         return user  
       }
     },
-    callApi ({ commit, state, getters, rootGetters }, url) {
+    callApi ({ commit, state, getters, rootGetters }, {authProvider, url}) {
       console.log('#### loading API data from action ####')
+      const token = getters.getAccessToken(authProvider)
+      console.log(token)
+      const headers = { 
+        Authorization: `Bearer ${token}`,
+        'Access-Control-Allow-Origin': '*'
+      }
       axios
+        .create({headers: headers})
         .get(url)
         .then(function (response) {
           console.log(response)
@@ -207,8 +232,8 @@ export default {
           // commit(CHANGE_USER_ERRORED_STATE, true)
         })
         .finally(function () {
-          console.log('user data finally')
-          console.log(getters.getUser)
+          console.log('api data finally')
+          // console.log(getters.getUser)
           // commit(CHANGE_USER_LOADED_STATE, true)
           // commit(SET_AUTH_STATE, getters.getUser.isAuthenticated)
         })

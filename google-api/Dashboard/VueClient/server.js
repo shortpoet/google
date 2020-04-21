@@ -8,8 +8,15 @@ const bodyParser = require('body-parser');
 const refreshClient = require('./../../js/refreshClient');
 const app = express();
 const calendar = require('./../../js/samples/calendar');
+const LinkedInAuthService = require('./src/utils/LinkedinAuthService')
+const util = require('util');
+const request = require('request');
+const querystring = require('querystring');
+const axios = require('axios')
 
 var cors = require('cors');
+const opn = require('open');
+
 app.use(cors());
 /*
 * log override for stack trace
@@ -65,7 +72,7 @@ app.get('/', (req, res) => {
 // })
 
 app.get('/login', (req, res) => {
-  refreshClient.authenticate()
+  refreshClient.authenticate();
 })
 
 
@@ -74,8 +81,58 @@ app.get('/calendar', async (req, res) => {
     const data = await calendar.runSampleExternal();
     res.json(data);
   } catch (e) {
-    console.log(e)
+    console.log(e);
   }
+})
+
+const linkedInAuthService = new LinkedInAuthService();
+
+app.get('/linkedin/login', (req, res) => {
+
+  console.log(`about to login at:  ${linkedInAuthService.authUrl}`)
+  opn(linkedInAuthService.authUrl, {wait: false}).then(loginRes => {
+    const headers = loginRes.headers
+    const data = loginRes.data
+    const query = loginRes.query
+    console.log(query)
+    const payload = { query: query, headers: headers, data: data }
+    res.json(payload)
+  })
+
+  // linkedInAuthService.getAccessToken(res).then(loginRes => {
+  //   const headers = loginRes.headers
+  //   const data = loginRes.data
+  //   const query = loginRes.query
+  //   console.log(query)
+  //   const payload = { query: query, headers: headers, data: data }
+  //   res.json(payload)
+  // })
+
+
+})
+app.get('/linkedin/callback', (req, res) => {
+  // res.json({
+  //   query: req.query
+  // })
+
+  linkedInAuthService.handshakeAxios(req.query).then(code => {
+    console.log(code)
+    res.json(code)
+  })
+
+  // linkedInAuthService.handshake(req).then(code => {
+  //   console.log(code)
+  //   res.json(code)
+  // })
+})
+
+app.get('/linkedin/me', (req, res) => {
+  console.log(linkedInAuthService.endpoints.me)
+  linkedInAuthService.queryApi(linkedInAuthService.endpoints.me)
+  .then(response => {
+    // console.log(response)
+    res.json(response.data)
+  })
 })
 
 // MIDDLEWARE

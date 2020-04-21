@@ -42,3 +42,8 @@ gcloud beta functions deploy auth_callback --runtime=nodejs8 --trigger-http --en
 ### list
 
 npm install --save googleapis open server-destroy fs url
+
+## LinkedIn API
+
+- https://docs.microsoft.com/en-us/linkedin/shared/integrations/people/profile-api
+- GET https://api.linkedin.com/v2/me

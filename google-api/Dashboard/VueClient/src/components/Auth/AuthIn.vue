@@ -5,6 +5,7 @@
     <button type="button" class="btn btn-success mx-2" @click="logoutAuth0">Logout Auth0 Service</button>
     <button type="button" class="btn btn-success mx-2" @click="loginGoogle">Login Google Service</button>
     <button type="button" class="btn btn-success mx-2" @click="logoutGoogle">Logout Google Service</button>
+    <button type="button" class="btn btn-success mx-2" @click="callApi({authProvider: 'auth0', url: 'https://api.linkedin.com/v2/me'})">Call Api</button>
     <UserDisplay :auth-provider="'auth0'" />
     <UserDisplay :auth-provider="'google'" />
   </div>
@@ -38,8 +39,10 @@ export default {
     this.loadOidcAuthService({authProvider: 'auth0', userManager: a0mgr, route: this.$route})
     this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route})
   },
+  mounted () {
+  },
   methods: {
-    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate', 'logout']),
+    ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate', 'logout', 'callApi']),
     tokenExpiredCallback () {
       // this.loadUser(new AuthUser())
     },
