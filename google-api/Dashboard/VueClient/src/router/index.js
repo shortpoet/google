@@ -13,7 +13,8 @@ const routes = function(paths) {
         component: resolve => import(`@/${path.file}.vue`).then(resolve),
         // component: path.view ? resolve => import(`@/views/${path.view}.vue`).then(resolve) 
         //   : resolve => import(`@/components/Auth/${path.component}.vue`).then(resolve) ,
-        beforeEnter: path.beforeEnter || ((to, from, next) => {next()})
+        beforeEnter: path.beforeEnter || ((to, from, next) => {next()}),
+        meta: { protected: false }
       }
     })
     // catch-all route

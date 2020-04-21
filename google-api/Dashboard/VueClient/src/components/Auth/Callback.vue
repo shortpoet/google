@@ -10,8 +10,6 @@
 
 <script>
 import { mapGetters, mapActions } from 'vuex'
-import Oidc from 'oidc-client'
-import AuthService from '@/utils/AuthService'
 
 export default {
   name: 'Callback',
@@ -22,7 +20,6 @@ export default {
     }
   },
   computed: {
-    ...mapGetters('auth', ['getUserManager'])
   },
   methods: {
     ...mapActions('auth', ['createOidcAuthService']),
@@ -48,26 +45,6 @@ export default {
         // TODO
         // this.$router.push({ name: 'Unauthorized' })
       }
-    },
-    redirect2() {
-      var mgr = new Oidc.UserManager({ userStore: new Oidc.WebStorageStateStore({ store: window.localStorage })});
-      console.log(mgr)
-      mgr.signinRedirectCallback().then(function (user) {
-        // window.location = '/auth'
-      }).catch(function (err) {
-        console.log(err)
-      });
-    },
-    redirect3() {
-      const authProvider = this.$route.query.authProvider.toLowerCase()
-      console.log(authProvider)
-      var mgr = this.getUserManager(authProvider)
-      console.log(mgr)
-      mgr.signinRedirectCallback().then(function (user) {
-        // window.location = '/auth'
-      }).catch(function (err) {
-        console.log(err)
-      });
     }
   },
   created: function () {

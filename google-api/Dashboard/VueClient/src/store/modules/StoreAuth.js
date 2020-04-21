@@ -68,9 +68,6 @@ export default {
   },
   getters: {
     getUserManager: (state) => (authProvider) => {
-      console.log(authProvider)
-      console.log(state[`${authProvider}`])
-      console.log(state[`${authProvider}`].userManager)
       return state[`${authProvider}`].userManager
     },
     getIsAuth: (state) => (authProvider) => {
@@ -121,7 +118,7 @@ export default {
     logout({getters, dispatch}, {authProvider}) {
       console.log(authProvider)
       const mgr = getters.getUserManager(authProvider)
-      mgr.signoutRedirect().then(() => {
+      mgr.signoutRedirect('/about').then(() => {
         dispatch('removeAuthService', authProvider)
       })
     },
@@ -136,34 +133,26 @@ export default {
       dispatch('checkAuth', {authProvider, userManager, route})
     },
     checkAuth ({ state, dispatch }, {authProvider, userManager, route}) {
-      // console.log(authProvider)
-      // console.log(userManager)
-      // console.log(route)
       return new Promise((resolve) => {
         var hasAccess = true
         // this is when installing checkAuth as global route guard
-        if (route === state.callbackRoute) {
+        // need to add beginnin to fullPath i think
+        if (route.fullPath === state.callbackRoute) {
           resolve(true)
           return
         }
-        console.log('mgr from checkauth')
-        console.log(userManager)
-        // this code is repeating itself - have a closer look
-        // IN THE MORNING!!!
         const getUserPromise = new Promise((resolve, reject) => {
-          // console.log(state[`${authProvider}`])
           userManager.getUser().then((user) => {
-            // console.log('this is the retrieved user')
-            // console.log(user)
               if (user) {
                 console.log('about to dispatch was authenticated')
                 dispatch('wasAuthenticated', {authProvider, userManager, user})
               }
               else {
                 hasAccess = false
-                // if (route.meta.protected) {
-                dispatch('authenticate', {route, authProvider})
-                // }
+                console.log(route.meta)
+                if (route.meta.protected) {
+                  dispatch('authenticate', {route, authProvider})
+                }
               }    
           }).catch(err => {
             console.error(err)
@@ -174,20 +163,17 @@ export default {
         resolve(hasAccess)
       })
     },
-    wasAuthenticated ({commit, dispatch}, {authProvider, userManager, user}) {
-      // console.log(authProvider)
-      // console.log(user)
+    wasAuthenticated ({commit, dispatch}, {authProvider, userManager}) {
       commit(SET_OIDC_AUTH, {authProvider, userManager})
       dispatch('setUser', authProvider)
     },
-    authenticate ({ state, getters, commit, dispatch }, {route, authProvider}) {
+    authenticate ({ getters }, {route, authProvider}) {
       authProvider = authProvider.toLowerCase()
-      console.log(authProvider)
       const mgr = getters.getUserManager(`${authProvider}`)
       console.log('manager from authenticate')
-      console.log(mgr)
+      // console.log(mgr)
       return mgr.signinRedirect({
-        route: route,
+        route: route.fullPath,
         // extraTokenParams: {
         //   authProvider: authProvider
         // },
@@ -199,15 +185,6 @@ export default {
         console.error(err)
       });
     },
-    // getUser ({state, dispatch}, provider) {
-    //   if(state[`${provider}`].user) {
-    //     return state[`${provider}`].user
-    //   } else {
-    //     dispatch('setUser', provider).then((user) => {
-    //       return user
-    //     })
-    //   }
-    // },
     async setUser ({getters, commit}, authProvider) {
       const mgr = getters.getUserManager(`${authProvider}`)
       // console.log(mgr)

@@ -33,14 +33,10 @@ export default {
     ...mapGetters('auth', ['getIsAuth', 'getUserLoaded', 'getOidcIdTokenExp', 'getOidcIdToken', 'getUser']),
   },
   async created () {
-    // this.doAuthLi()
-    console.log(this)
-    // console.log(this.getOidcIdToken(this.authProvider))
     const a0mgr = await this.createOidcAuthService({authProvider: 'auth0'})
     const gomgr = await this.createOidcAuthService({authProvider: 'google'})
-    console.log(gomgr)
-    this.loadOidcAuthService({authProvider: 'auth0', userManager: a0mgr, route: this.$route.fullPath})
-    this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route.fullPath})
+    this.loadOidcAuthService({authProvider: 'auth0', userManager: a0mgr, route: this.$route})
+    this.loadOidcAuthService({authProvider: 'google', userManager: gomgr, route: this.$route})
   },
   methods: {
     ...mapActions('auth', ['createOidcAuthService', 'loadOidcAuthService', 'authenticate', 'logout']),
@@ -55,14 +51,10 @@ export default {
       this.authenticate({route: this.$route.fullPath, authProvider: 'google'})
     },
     logoutAuth0 () {
-      // a0mgr.signoutRedirect()
-      // // returnPath ? mgr.signinRedirect({ state: returnPath })
-      // //   : mgr.signinRedirect()
+      this.logout({authProvider: 'auth0'})
     },
     logoutGoogle () {
       this.logout({authProvider: 'google'})
-      // // returnPath ? mgr.signinRedirect({ state: returnPath })
-      // //   : mgr.signinRedirect()
     },
   },
   beforeRouteEnter (to, from, next) {
