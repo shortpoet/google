@@ -1,6 +1,9 @@
 // const fs = require('fs')
 // const path = require('path')
 
+// config examples 
+// https://github.com/cedpoilly/auth0-vue-samples/tree/master/05-Authorization/config
+
 module.exports = {
   css: {
     // fixed css loader issue for npm from bash 

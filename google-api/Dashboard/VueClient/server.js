@@ -18,6 +18,7 @@ var cors = require('cors');
 const opn = require('open');
 
 app.use(cors());
+
 /*
 * log override for stack trace
 * https://stackoverflow.com/questions/45395369/how-to-get-console-log-line-numbers-shown-in-nodejs
@@ -90,44 +91,48 @@ const linkedInAuthService = new LinkedInAuthService();
 app.get('/linkedin/login', (req, res) => {
 
   console.log(`about to login at:  ${linkedInAuthService.authUrl}`)
-  opn(linkedInAuthService.authUrl, {wait: false}).then(loginRes => {
-    const headers = loginRes.headers
-    const data = loginRes.data
-    const query = loginRes.query
-    console.log(query)
-    const payload = { query: query, headers: headers, data: data }
-    res.json(payload)
-  })
 
-  // linkedInAuthService.getAccessToken(res).then(loginRes => {
-  //   const headers = loginRes.headers
-  //   const data = loginRes.data
-  //   const query = loginRes.query
-  //   console.log(query)
-  //   const payload = { query: query, headers: headers, data: data }
-  //   res.json(payload)
+  // this has cors failure
+  // res.redirect(linkedInAuthService.authUrl)
+
+  // this seems to just be a basic get
+  res.writeHead(301, {"Location": linkedInAuthService.authUrl})
+
+
+  // linkedInAuthService.signIn(req, res).then(x => {
+  //   console.log(x)
   // })
 
+  // this seems to trigger itself automatically
+  // req.get({url: `${this.authUrl}`, headers: req.headers})
+  // request.get(`${linkedInAuthService.authUrl}`)
+
+  // this works just once // not anymore after req.get started failing WTF lol
+  opn(linkedInAuthService.authUrl, {wait: false})
+
+  // this gets the html with a button to login
+  // linkedInAuthService.signInClient()
+  //   .then(loginRes => {
+  //     const headers = loginRes.headers
+  //     const data = loginRes.data
+  //     const query = loginRes.query
+  //     const payload = { query: query, headers: headers, data: data }
+  //     console.log(payload)
+  //     res.json(payload)
+  //   })
 
 })
 app.get('/linkedin/callback', (req, res) => {
   // res.json({
   //   query: req.query
   // })
-
   linkedInAuthService.handshakeAxios(req.query).then(code => {
     console.log(code)
     res.json(code)
   })
-
-  // linkedInAuthService.handshake(req).then(code => {
-  //   console.log(code)
-  //   res.json(code)
-  // })
 })
 
 app.get('/linkedin/me', (req, res) => {
-  console.log(linkedInAuthService.endpoints.me)
   linkedInAuthService.queryApi(linkedInAuthService.endpoints.me)
   .then(response => {
     // console.log(response)

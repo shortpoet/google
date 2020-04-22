@@ -1,11 +1,16 @@
 // https://codedialogue.com/accessing-linkedin-api-with-react-and-node-98932f5c58a2
 // https://github.com/imjuoy/SignIn-With-LinkedIn/blob/master/server.js
+// https://github.com/matthewshoup/linkedin-oauth2-nodejs-example/blob/master/server.js
 // https://github.com/request/request#oauth-signing
+
+// linked in methods (poss)
+// https://github.com/auth0/passport-linkedin-oauth2/blob/master/lib/oauth2.js
 
 const axios = require('axios');
 const querystring = require('querystring');
-var crypto = require("crypto");
-var https = require('https');
+const crypto = require("crypto");
+const https = require('https');
+const request = require('request')
 
 const LinkinClient = require('H:/source/repos/google/google-api/js/LinkedinClient')
 class LinkedInAuthService {
@@ -36,20 +41,66 @@ class LinkedInAuthService {
       client_id: this.config.client_id,
       redirect_uri: this.config.redirect_uri,
       state: this.config.state,
-      scope: this.config.scope
+      scope: this.config.scope,
+      // response_mode: 'form_post'
+      // response_mode: 'fragment',
+      response_mode: 'web_message',
+      prompt: 'none'
+
     })
     this.authUrl = `${this.config.base_url}/authorization?${qsCode}`
 
     this.tokenUrl = null
   }
 
+  checkAuth = () => {
+    return this.linkedinLoaded
+  }
+
+  signIn = (req, res) => {
+    return new Promise((resolve, reject) => {
+      try {
+
+        console.log(this.authUrl)
+
+        req.get({url: this.authUrl})
+
+        // this is basically same as axios
+        // request({
+        //   uri: this.authUrl,
+        //   method: 'GET',
+        //   maxRedirects:3
+        // }, function(error, response, body) {
+        //     if (!error) {
+        //       // console.log(response)
+        //       // console.log(response.statusCode)
+        //       res.write(`${response.statusCode}`);
+        //     } else {
+        //       //response.end(error);
+        //       res.write(error);
+        //     }
+        // });
+
+        // req.get({url: this.authUrl, headers: req.headers})
+        // req.get(this.authUrl)
+
+      } catch (e) {
+        reject(e);
+      }
+    });    
+  }
+
   signInClient = () => {
     return new Promise((resolve, reject) => {
       try {
-        const lc = new LinkinClient();
-        lc.signIn().then(res => {
-          console.log(res)
-        })
+        axios
+        .get(this.authUrl)
+        .then(response => {
+          resolve(response);
+        }).catch(e => {
+          console.error(e)
+        });
+
       } catch (e) {
         reject(e);
       }
@@ -90,6 +141,8 @@ class LinkedInAuthService {
         this.tokenUrl = `${this.config.base_url}/accessToken?${qsToken}`
 
         console.log(this.tokenUrl)
+        // a different way to set access token based on url of callback page
+        // https://github.com/auth0-blog/vuejs2-authentication-tutorial/blob/master/utils/auth.js
         axios
           .post(this.tokenUrl)
           .then(response => {
