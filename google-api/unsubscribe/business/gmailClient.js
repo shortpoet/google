@@ -11,35 +11,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-'use strict';
-const fs = require('fs');
-const path = require('path');
-const { google } = require('googleapis');
-const util = require('util');
-const btoa= require('btoa')
-const atob= require('atob')
+"use strict";
+const fs = require("fs");
+const path = require("path");
+const { google } = require("googleapis");
+const util = require("util");
+const btoa = require("btoa");
+const atob = require("atob");
 
-const { writeJson, appendSeparatorFile } = require('../../util/index');
+const { writeJson, appendSeparatorFile } = require("../../util/index");
 
-const recase = require('../../util/recase');
+const recase = require("../../util/recase");
 // const sampleClient = require('../sampleclient');
-const refreshClient = require('../../refreshClient');
-const Message = require('./message');
-const MessagePart = require('./messagePart');
+const refreshClient = require("../../refreshClient");
+const Message = require("./message");
+const MessagePart = require("./messagePart");
 
 const gmail = google.gmail({
-  version: 'v1',
-  auth:  refreshClient.oAuth2Client,
-});  
+  version: "v1",
+  auth: refreshClient.oAuth2Client,
+});
 
 async function getMessageList() {
-  const res = await gmail.users.messages.list({userId: 'me'});
+  const res = await gmail.users.messages.list({ userId: "me" });
+  console.log(util.inspect(res, false, null, true));
   // console.log(res.data);
   return res.data;
 }
 
 async function getMessage(messageId) {
-  const res = await gmail.users.messages.get({userId: 'me', id: messageId});
+  const res = await gmail.users.messages.get({ userId: "me", id: messageId });
   // console.log(util.inspect(res, false, null, true));
   return res.data;
 }
@@ -55,57 +56,75 @@ const extractInfoFromMessage = async (message) => {
       let _receivedSPF;
       let _listUnsubscribe;
       // let _status = 'Has Data';
-    
+
       const headers = message.payload.headers;
-      if (!headers) console.info(`no headers for ${message.id}`)
-      headers.forEach(h => {
-        if (h.name === 'Date') { _date = h.value; }
-        if (h.name === 'From') { _from = h.value; }
-        if (h.name === 'Subject') { _subject = h.value; }
-        if (h.name === 'Received') { _received = h.value; }
-        if (h.name === 'Received-SPF') { _receivedSPF = h.value; }
-        if (h.name === 'List-Unsubscribe') { _listUnsubscribe = h.value; }
-      })
-    
+      if (!headers) console.info(`no headers for ${message.id}`);
+      headers.forEach((h) => {
+        if (h.name === "Date") {
+          _date = h.value;
+        }
+        if (h.name === "From") {
+          _from = h.value;
+        }
+        if (h.name === "Subject") {
+          _subject = h.value;
+        }
+        if (h.name === "Received") {
+          _received = h.value;
+        }
+        if (h.name === "Received-SPF") {
+          _receivedSPF = h.value;
+        }
+        if (h.name === "List-Unsubscribe") {
+          _listUnsubscribe = h.value;
+        }
+      });
+
       const payloadParts = message.payload.parts;
-      let _messageParts = []
+      let _messageParts = [];
       if (payloadParts) {
-        payloadParts.forEach(p => {
+        payloadParts.forEach((p) => {
           let _contentType;
           let _contentTransferEncoding;
           const partHeaders = p.headers;
-          partHeaders.forEach(ph => {
-            if (ph.name === 'Content-Type') { _contentType = ph.value; }
-            if (ph.name === 'Content-Transfer-Encoding') { _contentTransferEncoding = ph.value; }
-          })
-          let _part  = new MessagePart({
+          partHeaders.forEach((ph) => {
+            if (ph.name === "Content-Type") {
+              _contentType = ph.value;
+            }
+            if (ph.name === "Content-Transfer-Encoding") {
+              _contentTransferEncoding = ph.value;
+            }
+          });
+          let _part = new MessagePart({
             messageId: message.id,
             mimeType: p.mimeType,
             bodySize: p.body.size,
             bodyData: p.body.data,
             contentType: _contentType,
-            contentTransferEncoding: _contentTransferEncoding
-          })
-          _messageParts.push(_part)
-        })
+            contentTransferEncoding: _contentTransferEncoding,
+          });
+          _messageParts.push(_part);
+        });
         // console.log('no body', message.id, message.payload.body.size)
       } else if (message.payload.body.size > 0) {
         // console.log(message.id, message.payload.body.size)
         // sometimes the body and data are directly in the payload
-        _messageParts.push(new MessagePart({
-          bodySize: message.payload.body.size,
-          bodyData: message.payload.body.data,
-          contentType: '',
-          contentTransferEncoding: ''
-        }))
+        _messageParts.push(
+          new MessagePart({
+            bodySize: message.payload.body.size,
+            bodyData: message.payload.body.data,
+            contentType: "",
+            contentTransferEncoding: "",
+          })
+        );
       } else {
-        console.info(`no parts or body for ${message.id}`)
+        console.info(`no parts or body for ${message.id}`);
       }
 
       let data = new Message({
         messageId: message.id,
         threadId: message.threadId,
-        labelIds: message.labelIds.join(', '),
+        labelIds: message.labelIds.join(", "),
         date: _date,
         from: _from,
         received: _received,
@@ -115,10 +134,10 @@ const extractInfoFromMessage = async (message) => {
         historyId: message.historyId,
         internalDate: message.internalDate,
         // status: _status,
-        messageParts: _messageParts
-      })
+        messageParts: _messageParts,
+      });
       resolve(data);
-    } catch(e) {
+    } catch (e) {
       console.error(e);
       reject(e);
     }
@@ -135,73 +154,86 @@ const parseData = async (message) => {
         // console.log(message.listUnsubscribe)
       } else {
         // console.log(`no unsub for ${message.messageId}`)
-        message.messageParts.forEach(p => {
+        message.messageParts.forEach((p) => {
           let url;
           try {
-            var hrefs = new RegExp(/<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi);
-            var hrefs2 = new RegExp(/<a[^>]*href=.*?["'](https?:\/\/[^"']+).*>(.*?)<\/a.*\s*>/gi);
+            var hrefs = new RegExp(
+              /<a[^>]*href=["'](https?:\/\/[^"']+)["'][^>]*>(.*?)<\/a>/gi
+            );
+            var hrefs2 = new RegExp(
+              /<a[^>]*href=.*?["'](https?:\/\/[^"']+).*>(.*?)<\/a.*\s*>/gi
+            );
             // console.log(hrefs)
-            let body = atob(p.bodyData)
+            let body = atob(p.bodyData);
             // console.log((urls = hrefs.exec(body)))
             // console.log(body)
             body.replace(/\s/g, "");
-            while ( urls = hrefs.exec(body) ) {
-              if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
+            while ((urls = hrefs.exec(body))) {
+              if (
+                urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) ||
+                urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)
+              ) {
                 url = urls[1];
                 message.listUnsubscribe = url;
                 // console.log(urls)
                 // in this position it only resolves if it parses successfully
                 // resolve(message);
               } else {
-                while ( urls = hrefs2.exec(body) ) {
-                  if (urls[1].match(/unsubscribe|click|optout|opt\-out|remove/i) || urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)) {
+                while ((urls = hrefs2.exec(body))) {
+                  if (
+                    urls[1].match(
+                      /unsubscribe|click|optout|opt\-out|remove/i
+                    ) ||
+                    urls[2].match(/unsubscribe|click|optout|opt\-out|remove/i)
+                  ) {
                     url = urls[1];
                     message.listUnsubscribe = url;
                     // console.log(urls)
                     // in this position it only resolves if it parses successfully
                     // resolve(message);
                   }
+                }
               }
-            } 
-          }   
+            }
           } catch (e) {
-            console.error(e)
+            console.error(e);
           }
         });
-      // console.log(util.inspect(urls, false, null, true));
-    }
-
-    if (message.listUnsubscribe){
-      if (message.listUnsubscribe.includes('mailto')) {
-        message.status = 'mailed unsubscribe';
-      } else if (message.listUnsubscribe.includes('href')) {
-        message.status = 'has unsubscribe link';
-    }
-    } else {
-      message.status = '';
-    }
-
-    if (message.messageParts){
-      // if there is more than one part with bodySize property
-      if (message.messageParts.length > 1) {
-        message.size = message.messageParts.reduce((a, b) => a.bodySize + b.bodySize);
+        // console.log(util.inspect(urls, false, null, true));
       }
-      else {
-        message.size = message.messageParts[0].bodySize
-      }
-    } else if (message.body.size) {
-      message.size = message.body.size;
-    } else {
-      message.size = 0;
-    }
 
-    resolve(message);
-    } catch(e) {
+      if (message.listUnsubscribe) {
+        if (message.listUnsubscribe.includes("mailto")) {
+          message.status = "mailed unsubscribe";
+        } else if (message.listUnsubscribe.includes("href")) {
+          message.status = "has unsubscribe link";
+        }
+      } else {
+        message.status = "";
+      }
+
+      if (message.messageParts) {
+        // if there is more than one part with bodySize property
+        if (message.messageParts.length > 1) {
+          message.size = message.messageParts.reduce(
+            (a, b) => a.bodySize + b.bodySize
+          );
+        } else {
+          message.size = message.messageParts[0].bodySize;
+        }
+      } else if (message.body.size) {
+        message.size = message.body.size;
+      } else {
+        message.size = 0;
+      }
+
+      resolve(message);
+    } catch (e) {
       console.error(e);
       reject(e);
     }
   });
-}
+};
 
 const buildMessage = () => {
   // You can use UTF-8 encoding for the subject using the method below.
@@ -210,34 +242,34 @@ const buildMessage = () => {
   // const subject = 'unsubscribe';
   // const utf8Subject = `=?utf-8?B?${Buffer.from(subject).toString('base64')}?=`;
   const messageParts = [
-    'From: Justin Beckwith <beckwith@google.com>',
-    'To: Justin Beckwith <beckwith@google.com>',
-    'Content-Type: text/html; charset=utf-8',
-    'MIME-Version: 1.0',
+    "From: Justin Beckwith <beckwith@google.com>",
+    "To: Justin Beckwith <beckwith@google.com>",
+    "Content-Type: text/html; charset=utf-8",
+    "MIME-Version: 1.0",
     `Subject: unsubscribe`,
-    '',
-    'This is a message just to say unsubscribe me.',
-    'So... <b>UNSUBSCRIBE!</b>  🤘❤️😎',
+    "",
+    "This is a message just to say unsubscribe me.",
+    "So... <b>UNSUBSCRIBE!</b>  🤘❤️😎",
   ];
-  const message = messageParts.join('\n');
+  const message = messageParts.join("\n");
 
   // The body needs to be base64url encoded.
   const encodedMessage = Buffer.from(message)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=+$/, '');
-  return encodedMessage
-}
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+  return encodedMessage;
+};
 
 const sendMessage = async (encodedMessage) => {
   const res = await gmail.users.messages.send({
-    userId: 'me',
-    requestBody: encodedMessage
+    userId: "me",
+    requestBody: encodedMessage,
   });
   // console.log(util.inspect(res, false, null, true));
   return res.data;
-}
+};
 
 const gmailClient = {
   getMessageList,
@@ -246,6 +278,6 @@ const gmailClient = {
   parseData,
   buildMessage,
   sendMessage,
-  client: refreshClient
+  client: refreshClient,
 };
 module.exports = gmailClient;
